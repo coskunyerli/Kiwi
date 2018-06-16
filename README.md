@@ -1,4 +1,4 @@
-## Todo List Application Using
+## Todo List Application Using QT Framework
 
 ## Info
 ## Install
