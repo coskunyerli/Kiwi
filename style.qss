@@ -1,0 +1,37 @@
+QTextEdit {
+    background-color: rgb(43, 43, 43);
+    color: rgb(169, 183, 198)
+}
+
+QListView {
+    background-color: rgb(52, 54, 56);
+}
+
+QListView:active {
+}
+
+QMainWindow {
+    background-color: rgb(60, 63, 65);
+}
+
+QLineEdit:selected {
+    border: none;
+}
+
+QListView:item {
+    border-bottom: 0.5px solid rgb(33, 34, 36);
+    color: lightgray;
+    height: 38px;
+    padding: 2px 20px 2px 20px;
+}
+
+QListView::item:selected {
+    color: black;
+    background-color: rgb(254, 234, 172);
+}
+
+QListView::item:focus {
+    color: black;
+    background-color: rgb(254, 203, 47);
+}
+

@@ -1,0 +1,261 @@
+# -*- coding: utf-8 -*-
+
+# Form implementation generated from reading ui file 'ui/mainWindow.ui'
+#
+# Created: Sun Jun 10 14:33:14 2018
+#      by: pyside-uic 0.2.15 running on PySide 1.2.2
+#
+# WARNING! All changes made in this file will be lost!
+import os
+import re
+import json
+import glob
+from PySide import QtCore, QtGui
+
+from HighLighting import HighlightingRule, Highlighter
+from python.models import FileListModel, FileListItem, StyleItem
+from python.path import filesPath
+
+class Ui_Form( object ):
+    def setupUi( self, Form ):
+        Form.setObjectName( "Form" )
+        # Form.resize( 868, 516 )
+        self.horizontalLayout_3 = QtGui.QHBoxLayout( Form )
+        self.horizontalLayout_3.setSpacing( 3 )
+        self.horizontalLayout_3.setObjectName( "horizontalLayout_3" )
+        self.fileListWidget = QtGui.QWidget( Form )
+        sizePolicy = QtGui.QSizePolicy( QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Preferred )
+        sizePolicy.setHorizontalStretch( 0 )
+        sizePolicy.setVerticalStretch( 0 )
+        sizePolicy.setHeightForWidth( self.fileListWidget.sizePolicy().hasHeightForWidth() )
+        self.fileListWidget.setSizePolicy( sizePolicy )
+        self.fileListWidget.setObjectName( "fileListWidget" )
+        self.verticalLayout_2 = QtGui.QVBoxLayout( self.fileListWidget )
+        self.verticalLayout_2.setContentsMargins( 0, 0, 0, 0 )
+        self.verticalLayout_2.setObjectName( "verticalLayout_2" )
+        self.searchWidgetInFileList = QtGui.QWidget( self.fileListWidget )
+        self.searchWidgetInFileList.setObjectName( "searchWidgetInFileList" )
+        self.horizontalLayout_2 = QtGui.QHBoxLayout( self.searchWidgetInFileList )
+        self.horizontalLayout_2.setContentsMargins( 0, 0, 0, 0 )
+        self.horizontalLayout_2.setObjectName( "horizontalLayout_2" )
+        self.searchLineBoxInFileList = QtGui.QLineEdit( self.searchWidgetInFileList )
+        self.searchLineBoxInFileList.setObjectName( "searchLineBoxInFileList" )
+        self.horizontalLayout_2.addWidget( self.searchLineBoxInFileList )
+        self.newFileButton = QtGui.QPushButton( self.searchWidgetInFileList )
+        self.newFileButton.setObjectName( "newFileButton" )
+        self.horizontalLayout_2.addWidget( self.newFileButton )
+        self.verticalLayout_2.addWidget( self.searchWidgetInFileList )
+        self.fileListView = QtGui.QListView( self.fileListWidget )
+        self.fileListView.setObjectName( "fileListView" )
+        self.verticalLayout_2.addWidget( self.fileListView )
+        self.horizontalLayout_3.addWidget( self.fileListWidget )
+        self.editorWidget = QtGui.QWidget( Form )
+        sizePolicy = QtGui.QSizePolicy( QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Preferred )
+        sizePolicy.setHorizontalStretch( 1 )
+        sizePolicy.setVerticalStretch( 0 )
+        sizePolicy.setHeightForWidth( self.editorWidget.sizePolicy().hasHeightForWidth() )
+        self.editorWidget.setSizePolicy( sizePolicy )
+        self.editorWidget.setObjectName( "editorWidget" )
+        self.verticalLayout = QtGui.QVBoxLayout( self.editorWidget )
+        self.verticalLayout.setContentsMargins( 0, 0, 0, 0 )
+        self.verticalLayout.setObjectName( "verticalLayout" )
+        self.searchWidgetInEditor = QtGui.QWidget( self.editorWidget )
+        self.searchWidgetInEditor.setObjectName( "searchWidgetInEditor" )
+        self.horizontalLayout = QtGui.QHBoxLayout( self.searchWidgetInEditor )
+        self.horizontalLayout.setContentsMargins( 0, 0, 0, 0 )
+        self.horizontalLayout.setObjectName( "horizontalLayout" )
+        self.searchLineBoxInEditor = QtGui.QLineEdit( self.searchWidgetInEditor )
+        self.searchLineBoxInEditor.setObjectName( "searchLineBoxInEditor" )
+        self.searchLineBoxInEditor.setSizePolicy( sizePolicy )
+        self.horizontalLayout.addWidget( self.searchLineBoxInEditor )
+        self.prevWordButton = QtGui.QPushButton( self.searchWidgetInEditor )
+        self.prevWordButton.setObjectName( "prevWordButton" )
+
+        self.horizontalLayout.addWidget( self.prevWordButton )
+        self.nextWordButton = QtGui.QPushButton( self.searchWidgetInEditor )
+        self.nextWordButton.setObjectName( "nextWordButton" )
+        self.horizontalLayout.addWidget( self.nextWordButton )
+        self.doneButton = QtGui.QPushButton( self.searchWidgetInEditor )
+        self.doneButton.setObjectName( "doneButton" )
+        self.horizontalLayout.addWidget( self.doneButton )
+        self.replaceCheckBox = QtGui.QCheckBox( self.searchWidgetInEditor )
+        self.replaceCheckBox.setObjectName( "replaceCheckBox" )
+        self.horizontalLayout.addWidget( self.replaceCheckBox )
+        self.verticalLayout.addWidget( self.searchWidgetInEditor )
+        self.editor = QtGui.QTextEdit( self.editorWidget )
+        self.editor.setObjectName( "editor" )
+        self.verticalLayout.addWidget( self.editor )
+        self.horizontalLayout_3.addWidget( self.editorWidget )
+
+        self.retranslateUi( Form )
+        QtCore.QMetaObject.connectSlotsByName( Form )
+        self.fileListView.setAttribute( QtCore.Qt.WA_MacShowFocusRect, False )
+        self.searchLineBoxInFileList.setAttribute( QtCore.Qt.WA_MacShowFocusRect, False )
+        self.searchLineBoxInEditor.setAttribute( QtCore.Qt.WA_MacShowFocusRect, False )
+
+
+    def retranslateUi( self, Form ):
+        Form.setWindowTitle( QtGui.QApplication.translate( "Form", "Form", None, QtGui.QApplication.UnicodeUTF8 ) )
+        self.newFileButton.setText( QtGui.QApplication.translate( "Form", "+", None, QtGui.QApplication.UnicodeUTF8 ) )
+        self.prevWordButton.setText( QtGui.QApplication.translate( "Form", "<", None, QtGui.QApplication.UnicodeUTF8 ) )
+        self.nextWordButton.setText( QtGui.QApplication.translate( "Form", ">", None, QtGui.QApplication.UnicodeUTF8 ) )
+        self.doneButton.setText( QtGui.QApplication.translate( "Form", "Done", None, QtGui.QApplication.UnicodeUTF8 ) )
+        self.replaceCheckBox.setText(
+            QtGui.QApplication.translate( "Form", "Replace", None, QtGui.QApplication.UnicodeUTF8 ) )
+
+class MainWidget( Ui_Form, QtGui.QWidget ):
+    def __init__( self, config, fileList, parent = None ):
+        super( MainWidget, self ).__init__( parent )
+        self.fileList = fileList
+        self.currentFileItem = None
+        self.fileListModel = FileListModel( self.fileList )
+        self.timer = QtCore.QTimer( self )
+        self.config = config
+        self.styleItems = map( lambda item: StyleItem.create( item ), self.config.get( 'patterns' ) )
+        self.setupUi( self )
+        self.initSignalsAndSlots()
+        self.initialize()
+
+
+    def initialize( self ):
+        self.deleteItemShortCut = QtGui.QShortcut( self.fileListView )
+        self.deleteItemShortCut.setContext( QtCore.Qt.WidgetShortcut )
+        self.deleteItemShortCut.setKey( QtGui.QKeySequence( QtCore.Qt.Key_Backspace ) )
+        self.deleteItemShortCut.activated.connect( self.deleteItemFromFileList )
+        self.reformatShortCut = QtGui.QShortcut( self.editor )
+        self.reformatShortCut.setContext( QtCore.Qt.WidgetShortcut )
+        self.reformatShortCut.setKey( QtGui.QKeySequence( 'Ctrl+Alt+K' ) )
+        self.reformatShortCut.activated.connect( self.reformatBlocks )
+        self.fileListView.setModel( self.fileListModel )
+        if self.fileList is None or len( self.fileList ) <= 0:
+            self.newFile()
+        self.loadFile( self.fileListModel.index( 0 ) )
+
+        self.highlighter = Highlighter( self.editor, self.styleItems )
+        self.searchLineBoxInEditor.setPlaceholderText( 'Search' )
+        self.searchLineBoxInFileList.setPlaceholderText( 'Search' )
+        self.searchWidgetInEditor.hide()
+        self.fileListWidget.setMaximumWidth( 200 )
+        searchFormat = QtGui.QTextCharFormat()
+        searchFormat.setBackground( QtGui.QColor( 'yellow' ) )
+        self.rule = HighlightingRule( self.editor )
+        self.rule.format = searchFormat
+        self.highlighter.highlightingRules.append( self.rule )
+        self.editor.setFocus()
+        self.fileListView.setAcceptDrops( True )
+        self.fileListView.setDragEnabled( True )
+        self.fileListView.setDragDropMode( QtGui.QAbstractItemView.InternalMove )
+
+
+    def initSignalsAndSlots( self ):
+        self.doneButton.clicked.connect( self.searchWidgetInEditor.hide )
+        self.prevWordButton.clicked.connect( self.prevSearchText )
+        self.nextWordButton.clicked.connect( self.nextSearchText )
+        self.searchLineBoxInEditor.textChanged.connect( self.searchWord )
+        self.newFileButton.clicked.connect( self.newFile )
+        self.searchLineBoxInFileList.textChanged.connect( self.searchFileNames )
+        self.fileListView.clicked.connect( self.loadFile )
+        self.fileListModel.dataUpdated.connect( self.titleNameChanged )
+        self.timer.timeout.connect( self.saveFile )
+        self.editor.document().contentsChanged.connect( self.contentChanged )
+
+
+    def nextSearchText( self ):
+        cursor = self.editor.textCursor()
+
+        block = cursor.block()
+        while block.isValid():
+            matches = self.rule.search( block.text() )
+            for match in matches:
+                cursor.setPosition( block.position() + match.start() )
+                self.editor.setTextCursor( cursor )
+                return
+            block = block.next()
+
+
+    def prevSearchText( self ):
+        pass
+
+
+    def searchWord( self, text ):
+        self.rule.pattern = re.compile( text )
+        self.editor.document().contentsChange.emit( 0, 0, 0 )
+
+
+    def showSearch( self ):
+        self.searchWidgetInEditor.show()
+        text = self.editor.textCursor().selectedText()
+        self.searchLineBoxInEditor.setText( text )
+        self.searchLineBoxInEditor.setFocus()
+
+
+    def newFile( self ):
+        filename = self.generateFileName()
+        f = open( filename, "w+" )
+        self.fileListModel.insertData( FileListItem( filename, 'New Note' ), 0 )
+        self.titleNameChanged( None, None, None )
+        f.close()
+
+
+    def searchFileNames( self, text ):
+        self.fileListModel.search( text )
+
+
+    def titleNameChanged( self, old, new, index ):
+        with open( 'fileList.json', 'w' ) as outfile:
+            json.dump( self.fileListModel.json(), outfile )
+
+
+    def generateFileName( self ):
+        allTextFiles = glob.glob( "%s/*.txt" % filesPath )
+        filename = '%s/file%d.txt' % (filesPath, len( allTextFiles ))
+        return filename
+
+
+    def loadFile( self, index ):
+        self.fileListView.setCurrentIndex( index )
+        self.saveFile()
+        data = self.fileListModel.getItem( index.row() )
+        file = open( data.filename, 'r' )
+        self.editor.document().contentsChanged.disconnect( self.contentChanged )
+        self.editor.setPlainText( file.read().decode( 'utf-8' ) )
+        self.editor.document().contentsChanged.connect( self.contentChanged )
+        file.close()
+        self.currentFileItem = data.filename
+
+
+    def saveFile( self ):
+        if self.currentFileItem:
+            file = open( self.currentFileItem, 'w' )
+            file.write( self.editor.toPlainText() )
+            file.close()
+
+        self.editor.document().setModified( False )
+
+
+    def deleteItemFromFileList( self ):
+        index = self.fileListView.currentIndex()
+        data = self.fileListModel.removeData( index )
+
+        if data:
+            try:
+                os.remove( data.filename )
+            except OSError as e:  # name the Exception `e`
+                print "Failed with:", e.strerror  # look what it says
+                print "Error code:", e.code
+
+            self.titleNameChanged( None, None, None )
+            self.currentFileItem = None
+            self.loadFile( self.fileListModel.index( 0 ) )
+
+
+    def contentChanged( self ):
+        index = self.fileListModel.getIndex( self.currentFileItem )
+        if index != -1 and index != 0:
+            self.fileListModel.moveItem( index, 0 )
+            self.titleNameChanged( None, None, None )
+        self.timer.start( 600 )
+
+
+    def reformatBlocks( self ):
+        print 'reformated'
