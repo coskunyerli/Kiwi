@@ -4,18 +4,8 @@ from PySide import QtGui, QtCore
 class Highlighter( QtGui.QSyntaxHighlighter ):
     def __init__( self, editor, patterns ):
         super( Highlighter, self ).__init__( editor.document() )
-        self.highlightingRules = []
-        self.patterns = patterns
-        for pattern in self.patterns:
-            self.format = QtGui.QTextCharFormat()
-            self.format.setFontWeight( QtGui.QFont.Bold if pattern.bold else QtGui.QFont.Normal )
-            self.format.setForeground( QtGui.QColor( pattern.color ) )
-            self.format.setFontPointSize( pattern.size )
-            self.format.setFontStrikeOut( pattern.strikeout )
-            rule = HighlightingRule( editor )
-            rule.pattern = re.compile( pattern.pattern )
-            rule.format = self.format
-            self.highlightingRules.append( rule )
+        self.editor = editor
+        self.updateHighlighterRules( patterns )
 
 
     def highlightBlock( self, text ):
@@ -23,6 +13,17 @@ class Highlighter( QtGui.QSyntaxHighlighter ):
             matches = rule.search( text )
             for match in matches:
                 self.setFormat( match.start(), match.end() - match.start(), rule.format )
+
+
+    def updateHighlighterRules( self, patterns ):
+        self.patterns = patterns
+        self.highlightingRules = []
+        for pattern in self.patterns:
+            self.format = pattern.charFormat
+            rule = HighlightingRule( self.editor )
+            rule.pattern = re.compile( pattern.pattern )
+            rule.format = self.format
+            self.highlightingRules.append( rule )
 
 class HighlightingRule( object ):
     def __init__( self, editor ):
