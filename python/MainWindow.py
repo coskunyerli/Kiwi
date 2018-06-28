@@ -5,14 +5,16 @@ from PySide import QtCore, QtGui
 from MainWidget import MainWidget
 from python.models import FileListItem
 from python.path import iconPath, editorPath, fileListPath, stylePath, projectPath
+from python.preferencesDialogue import Preferences
 
 class MainWindow( QtGui.QMainWindow ):
     def __init__( self, parent = None ):
         super( MainWindow, self ).__init__( parent )
         self.resize( 800, 600 )
         self.filename = os.path.join( os.getcwd(), 'untitled.txt' )
+        self.confFileList = self.readConfFile()
 
-        self.mainWidget = MainWidget( self.readConfFile(), self.readFileList(), self )
+        self.mainWidget = MainWidget( self.confFileList, self.readFileList(), self )
         self.editor = self.mainWidget.editor
         self.setupEditor()
         self.setupFileMenu()
@@ -80,7 +82,7 @@ class MainWindow( QtGui.QMainWindow ):
         fileMenu.addAction( action )
         fileMenu.addSeparator()
         action = QtGui.QAction( self )
-        action.triggered.connect( self.showPreferences )
+        action.triggered.connect( self.mainWidget.openPreferences )
         action.setShortcut( QtGui.QKeySequence( 'Ctrl+Alt+S' ) )
         action.setText(
             QtGui.QApplication.translate( "MainWindow", "Preferences", None, QtGui.QApplication.UnicodeUTF8 ) )
@@ -105,10 +107,6 @@ class MainWindow( QtGui.QMainWindow ):
                                      to perform simple syntax highlighting by subclassing 
                                      the QSyntaxHighlighter class and describing 
                                      highlighting rules using regular expressions.</p>""" )
-
-
-    def showPreferences( self ):
-        print 'ddasdasd'
 
 
     def updateMainWindowTitle( self, change ):
