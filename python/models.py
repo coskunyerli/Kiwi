@@ -1,26 +1,66 @@
+import os
+
 from PySide import QtCore, QtGui
 
+from python.path import iconsPath
+
 class StyleItem( object ):
-    def __init__( self, name, pattern, size, bold, strikeout, color ):
+    def __init__( self, name, pattern, family, size, bold, strikeout, italic,
+                  color, background ):
         super( StyleItem, self ).__init__()
         self.name = name
         self.pattern = pattern
-        self.size = size
-        self.bold = bold
-        self.strikeout = strikeout
-        self.color = color
+        self._blockCharFormat = QtGui.QTextCharFormat()
+        font = QtGui.QFont( family, size )
+        color = QtGui.QColor( color )
+        self._blockCharFormat.setFont( font )
+        self._blockCharFormat.setFontItalic( bool( italic ) )
+        self._blockCharFormat.setFontWeight( QtGui.QFont.Bold if bold else QtGui.QFont.Normal )
+        self._blockCharFormat.setFontStrikeOut( bool( strikeout ) )
+        self._blockCharFormat.setForeground( QtGui.QBrush( color ) )
+        if background:
+            self._blockCharFormat.setBackground( QtGui.QBrush( QtGui.QColor( background ) ) )
+        else:
+            self._blockCharFormat.setBackground( QtGui.QBrush() )
+
+
+    def __str__( self ):
+        return '%s %s' % (self.name, self._blockCharFormat.foreground().color().name())
+
+
+    def __repr__( self ):
+        return self.__str__()
 
 
     def json( self ):
-        return {'pattern': self.pattern, 'size': self.size, 'bold': self.bold, 'strikeout': self.strikeout,
-                'color': self.color}
+        background = self.charFormat.background().color().name() if self.charFormat.background().isOpaque() else None
+        return {'name': self.name, 'pattern': self.pattern, 'family': self.charFormat.fontFamily(),
+                'size': self.charFormat.fontPointSize(), 'bold': self.charFormat.fontWeight() == QtGui.QFont.Bold,
+                'strikeout': self.charFormat.fontStrikeOut(), 'italic': self.charFormat.fontItalic(),
+                'color': self.charFormat.foreground().color().name(),
+                'background': background}
+
+
+    @property
+    def charFormat( self ):
+        return self._blockCharFormat
+
+
+    def setCharFormat( self, format ):
+        self._blockCharFormat = format
+
+
+    def copy( self ):
+        return StyleItem.create( self.json() )
 
 
     @staticmethod
     def create( dictItem ):
-        return StyleItem( dictItem['name'], dictItem['pattern'], dictItem.get( 'size', 12 ), dictItem['bold'],
-                          dictItem.get( 'strikeout', False ),
-                          dictItem['color'] )
+        return StyleItem( dictItem['name'], dictItem['pattern'], dictItem.get( 'family', 'Courier' ),
+                          dictItem.get( 'size', 12 ),
+                          dictItem.get( 'bold', False ),
+                          dictItem.get( 'strikeout', False ), dictItem.get( 'italic', False ),
+                          dictItem.get( 'color', 'white' ), dictItem.get( 'background', None ) )
 
 class FileListItem( object ):
     def __init__( self, filename, title ):
@@ -188,3 +228,17 @@ class FileListModel( QtCore.QAbstractListModel ):
 
     def json( self ):
         return map( lambda data: data.json(), self.fileList )
+
+class ButtonWithRightClick( QtGui.QToolButton ):
+    rightClicked = QtCore.Signal()
+
+
+    def __init__( self, parent = None ):
+        super( ButtonWithRightClick, self ).__init__( parent )
+
+
+    def mousePressEvent( self, event ):
+        if event.button() == QtCore.Qt.RightButton:
+            self.rightClicked.emit()
+        else:
+            self.click()
