@@ -35,3 +35,14 @@ QListView::item:focus {
     background-color: rgb(254, 203, 47);
 }
 
+QDialog {
+    background-color: rgb(60, 63, 65);
+}
+
+QDialog QLabel, QCheckBox {
+    color: white;
+}
+
+QDialog #previewDisplay {
+    background-color: rgb(43, 43, 43);
+}
