@@ -249,7 +249,6 @@ class Preferences( Ui_Form, QtGui.QDialog ):
         if charFormat.background().isOpaque():
             self.backColorButton.setStyleSheet( qss )
         else:
-            print 'ffsdfsdfd'
             self.setBackgroundNone()
         self.fontChanged.emit()
 
