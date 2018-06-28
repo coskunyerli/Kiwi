@@ -102,7 +102,7 @@ class Ui_Form( object ):
         self.horizontalLayout_4.addWidget( self.replaceAllButton )
         self.verticalLayout_3.addWidget( self.replaceWidget )
         self.verticalLayout.addWidget( self.searchWidgetInEditor )
-        self.editor = QtGui.QTextEdit( self.editorWidget )
+        self.editor = QtGui.QPlainTextEdit( self.editorWidget )
         self.editor.setObjectName( "editor" )
         self.verticalLayout.addWidget( self.editor )
         self.horizontalLayout_3.addWidget( self.editorWidget )

@@ -1,4 +1,4 @@
-QTextEdit {
+QPlainTextEdit {
     background-color: rgb(43, 43, 43);
     color: rgb(169, 183, 198)
 }

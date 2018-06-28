@@ -43,7 +43,6 @@
        <widget class="QListView" name="fileListView"/>
       </item>
      </layout>
-     <zorder>searchLineBoxInFileList</zorder>
      <zorder>fileListView</zorder>
      <zorder>searchWidgetInFileList</zorder>
     </widget>
@@ -59,36 +58,81 @@
      <layout class="QVBoxLayout" name="verticalLayout">
       <item>
        <widget class="QWidget" name="searchWidgetInEditor" native="true">
-        <layout class="QHBoxLayout" name="horizontalLayout">
+        <layout class="QVBoxLayout" name="verticalLayout_3">
          <item>
-          <widget class="QLineEdit" name="searchLineBoxInEditor"/>
-         </item>
-         <item>
-          <widget class="QPushButton" name="prevWordButton">
-           <property name="text">
-            <string>&lt;</string>
-           </property>
+          <widget class="QWidget" name="searchWidget" native="true">
+           <layout class="QHBoxLayout" name="horizontalLayout">
+            <property name="topMargin">
+             <number>0</number>
+            </property>
+            <property name="bottomMargin">
+             <number>0</number>
+            </property>
+            <item>
+             <widget class="QLineEdit" name="searchLineBoxInEditor"/>
+            </item>
+            <item>
+             <widget class="QPushButton" name="prevWordButton">
+              <property name="text">
+               <string>&lt;</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="nextWordButton">
+              <property name="text">
+               <string>&gt;</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="doneButton">
+              <property name="text">
+               <string>Done</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="replaceCheckBox">
+              <property name="text">
+               <string>Replace</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
           </widget>
          </item>
          <item>
-          <widget class="QPushButton" name="nextWordButton">
-           <property name="text">
-            <string>&gt;</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QPushButton" name="doneButton">
-           <property name="text">
-            <string>Done</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QCheckBox" name="replaceCheckBox">
-           <property name="text">
-            <string>Replace</string>
-           </property>
+          <widget class="QWidget" name="replaceWidget" native="true">
+           <layout class="QHBoxLayout" name="horizontalLayout_4">
+            <property name="topMargin">
+             <number>0</number>
+            </property>
+            <property name="bottomMargin">
+             <number>0</number>
+            </property>
+            <item>
+             <widget class="QLineEdit" name="replaceLineEdit">
+              <property name="placeholderText">
+               <string>Replace</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="replaceButton">
+              <property name="text">
+               <string>Replace</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="replaceAllButton">
+              <property name="text">
+               <string>All</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
           </widget>
          </item>
         </layout>
