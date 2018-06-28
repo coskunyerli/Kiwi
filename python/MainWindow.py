@@ -21,7 +21,7 @@ class MainWindow( QtGui.QMainWindow ):
         self.setupHelpMenu()
         self.setCentralWidget( self.mainWidget )
         self.setWindowTitle( 'TodoList' )
-        self.setWindowIcon( QtGui.QIcon( iconPath ) )
+        #self.setWindowIcon( QtGui.QIcon( iconPath ) )
         self.initSignalsAndSlots()
         self.initialize()
 
