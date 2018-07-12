@@ -107,8 +107,8 @@ class MainWindow( QtGui.QMainWindow ):
 
     @QtCore.Slot()
     def about( self ):
-        QtGui.QMessageBox.about( self, "About Syntax Highlighter",
-                                 """<p>The <b>Syntax Highlighter</b> example shows how 
+        QtGui.QMessageBox.about( self, "About TodoList application",
+                                 """<p>The <b>TodoList</b> example shows how 
                                      to perform simple syntax highlighting by subclassing 
                                      the QSyntaxHighlighter class and describing 
                                      highlighting rules using regular expressions.</p>""" )
