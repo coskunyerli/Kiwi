@@ -135,10 +135,11 @@ class FileListModel( QtCore.QAbstractListModel ):
             row = index.row()
             oldModelItem = self.fileList[row]
             newModelItem = item
-            if isinstance( newModelItem, basestring ):
+            if isinstance( newModelItem, unicode ):
                 if newModelItem.strip() == '' or newModelItem == oldModelItem.title:
                     return False
-                newModelItem = FileListItem( oldModelItem.filename, newModelItem )
+                oldModelItem.title = newModelItem
+                newModelItem = oldModelItem
             self.fileList[row] = newModelItem
             self.dataUpdated.emit( newModelItem, oldModelItem, row )
             self.dataChanged.emit( index, index )
@@ -171,7 +172,9 @@ class FileListModel( QtCore.QAbstractListModel ):
         if index is None:
             index = self.rowCount()
         self.beginInsertRows( QtCore.QModelIndex(), index, index )
-        self.fileList.insert( index, data )
+        self.allFileList.insert( index, data )
+        if self.searchTitle.lower() in data.title.lower():
+            self.fileList.insert( index, data )
         self.endInsertRows()
         return True
 
@@ -189,8 +192,8 @@ class FileListModel( QtCore.QAbstractListModel ):
 
 
     def search( self, title ):
+        self.searchTitle = title
         self.fileList = filter( lambda item: title.lower() in item.title.lower(), self.allFileList )
-        self.dataChanged.emit( 0, len( self.allFileList ) )
 
 
     def getItem( self, index ):
