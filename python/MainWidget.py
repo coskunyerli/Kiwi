@@ -14,7 +14,7 @@ from PySide import QtCore, QtGui
 
 from HighLighting import HighlightingRule, Highlighter
 from python.models import FileListModel, FileListItem, StyleItem
-from python.path import filesPath
+from python.path import filesPath, filePath, fileListPath
 from python.preferencesDialogue import Preferences
 
 class Ui_Form( object ):
@@ -154,6 +154,10 @@ class MainWidget( Ui_Form, QtGui.QWidget ):
         self.quitSearchWordShortcut.activated.connect( self.hideSearchWidgetInEditor )
         self.fileListView.setModel( self.fileListModel )
         if self.fileList is None or len( self.fileList ) <= 0:
+            if not os.path.isdir( filePath ):
+                os.makedirs( filePath )
+            if not os.path.isdir( filesPath ):
+                os.makedirs( filesPath )
             self.newFile()
         self.loadFile( self.fileListModel.index( 0 ) )
 
@@ -281,7 +285,7 @@ class MainWidget( Ui_Form, QtGui.QWidget ):
         block = cursor.block()
         position = cursor.position()
         firstPosition = position
-        while block.isValid() and block.isVisible():
+        while block.isValid():
             position = block.position() + len( block.text() )
             block = block.next()
         self.editor.document().contentsChange.emit( firstPosition, position, position )
@@ -300,14 +304,18 @@ class MainWidget( Ui_Form, QtGui.QWidget ):
         self.fileListModel.insertData( FileListItem( filename, 'New Note' ), 0 )
         self.titleNameChanged( None, None, None )
         f.close()
+        index = self.fileListModel.index( 0 )
+        if index.isValid():
+            self.loadFile( index )
 
 
     def searchFileNames( self, text ):
         self.fileListModel.search( text )
+        self.fileListWidget.update()
 
 
     def titleNameChanged( self, old, new, index ):
-        with open( 'fileList.json', 'w' ) as outfile:
+        with open( fileListPath, 'w' ) as outfile:
             json.dump( self.fileListModel.json(), outfile )
 
 
@@ -328,12 +336,20 @@ class MainWidget( Ui_Form, QtGui.QWidget ):
         self.fileListView.setCurrentIndex( index )
         self.saveFile()
         data = self.fileListModel.getItem( index.row() )
-        file = open( data.filename, 'r' )
-        self.editor.document().contentsChanged.disconnect( self.contentChanged )
-        self.editor.setPlainText( file.read().decode( 'utf-8' ) )
-        self.editor.document().contentsChanged.connect( self.contentChanged )
-        file.close()
-        self.currentFileItem = data.filename
+        if self.currentFileItem != data.filename:
+            file = open( data.filename, 'r' )
+            #
+            self.editor.document().contentsChanged.disconnect( self.contentChanged )
+            text = file.read().decode( 'utf-8' )
+            if text == '':
+                self.editor.document().blockSignals( True )
+                self.editor.clear()
+                self.editor.document().blockSignals( False )
+            else:
+                self.editor.setPlainText( text )
+            self.editor.document().contentsChanged.connect( self.contentChanged )
+            file.close()
+            self.currentFileItem = data.filename
 
 
     def saveFile( self ):
