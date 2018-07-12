@@ -13,6 +13,8 @@ class MainWindow( QtGui.QMainWindow ):
         self.resize( 800, 600 )
         self.filename = os.path.join( os.getcwd(), 'untitled.txt' )
         self.confFileList = self.readConfFile()
+        if self.confFileList is None:
+            self.confFileList = {'patterns': []}
 
         self.mainWidget = MainWidget( self.confFileList, self.readFileList(), self )
         self.editor = self.mainWidget.editor
@@ -21,14 +23,17 @@ class MainWindow( QtGui.QMainWindow ):
         self.setupHelpMenu()
         self.setCentralWidget( self.mainWidget )
         self.setWindowTitle( 'TodoList' )
-        #self.setWindowIcon( QtGui.QIcon( iconPath ) )
         self.initSignalsAndSlots()
         self.initialize()
 
 
     def readConfFile( self ):
         confFile = open( editorPath, 'r' )
-        config = json.load( confFile )
+        try:
+            config = json.load( confFile )
+        except:
+            confFile.close()
+            return None
         return config
 
 
