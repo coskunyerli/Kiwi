@@ -4,7 +4,7 @@ import sys
 
 from PySide import QtGui
 
-from python.MainWindow import MainWindow
+from MainWindow import MainWindow
 
 reload( sys )
 sys.setdefaultencoding( 'utf8' )

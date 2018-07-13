@@ -3,9 +3,8 @@ import os
 
 from PySide import QtCore, QtGui
 from MainWidget import MainWidget
-from python.models import FileListItem
-from python.path import iconPath, editorPath, fileListPath, stylePath, projectPath
-from python.preferencesDialogue import Preferences
+from models import FileListItem
+from path import iconPath, editorPath, fileListPath, stylePath, projectPath
 
 class MainWindow( QtGui.QMainWindow ):
     def __init__( self, parent = None ):
