@@ -11,8 +11,8 @@ import re
 
 from PySide import QtGui, QtCore
 
-from python.models import StyleItem, ButtonWithRightClick
-from python.path import iconsPath
+from models import StyleItem, ButtonWithRightClick
+from path import iconsPath
 
 class Ui_Form( object ):
     def setupUi( self, Form ):
