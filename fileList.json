@@ -1,1 +1,28 @@
-[{"title": "TodoList", "filename": "files/file0.txt"}, {"title": "\u0130kinci test", "filename": "files/file2.txt"}, {"title": "New Note", "filename": "files/file1.txt"}]
+{
+  "files": [
+    {
+      "files": [
+        {
+          "title": "New Note",
+          "type": 1,
+          "filename": "/Users/coskunyerli/.todolist/files/file0.txt"
+        }
+      ],
+      "title": "New Folder",
+      "type": 0,
+      "parent": "/Users/coskunyerli/.todolist/files",
+      "filename": "/Users/coskunyerli/.todolist/files/folder1"
+    },
+    {
+      "files": [],
+      "title": "New Folder",
+      "type": 0,
+      "parent": "/Users/coskunyerli/.todolist/files",
+      "filename": "/Users/coskunyerli/.todolist/files/folder0"
+    }
+  ],
+  "title": "root",
+  "type": 0,
+  "parent": null,
+  "filename": "/Users/coskunyerli/.todolist/files"
+}

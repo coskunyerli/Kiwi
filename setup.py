@@ -7,9 +7,9 @@ Usage:
 
 from setuptools import setup
 
-APP = ['bin/TodoList.py']
+APP = ['python/TodoList.py']
 DATA_FILES = ['editor.conf', 'icons', 'style.qss']
-OPTIONS = {'iconfile': 'icon.icns', }
+OPTIONS = {'iconfile': 'icon.icns', "argv_emulation": True, "includes": ["PySide"]}
 
 setup(
     app = APP,
