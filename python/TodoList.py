@@ -2,7 +2,7 @@
 # --coding: utf-8 --
 import sys
 
-from PySide import QtGui
+from PySide2 import QtWidgets
 
 from MainWindow import MainWindow
 
@@ -12,13 +12,12 @@ if __name__ == "__main__":
     # setup app
 
     # setup Qt app for ui
-    app = QtGui.QApplication( sys.argv )
+    app = QtWidgets.QApplication( sys.argv )
     app.setApplicationName( "TodoList" )
 
     # setup ui
     mainWindow = MainWindow()
     mainWindow.show()
-
 
     sys.exit( app.exec_() )
 
@@ -32,3 +31,4 @@ if __name__ == "__main__":
 Bunu ekle plist içine
 
 """
+
