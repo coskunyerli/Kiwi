@@ -1,10 +1,7 @@
-#!venvFlow/bin/python
 # --coding: utf-8 --
 import sys
-
 from PySide2 import QtWidgets
-
-from MainWindow import MainWindow
+from python.mainWindow import MainWindow
 
 reload( sys )
 sys.setdefaultencoding( 'utf8' )
@@ -27,8 +24,6 @@ if __name__ == "__main__":
 <string>NSApplication</string>
 <key>NSHighResolutionCapable</key>
 <string>True</string>
-
-Bunu ekle plist içine
 
 """
 

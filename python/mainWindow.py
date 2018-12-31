@@ -2,7 +2,7 @@ import json
 import os
 
 from PySide2 import QtCore, QtGui, QtWidgets
-from MainWidget import MainWidget
+from mainWidget import MainWidget
 from models import FileListItem, FolderListItem
 from enums import FileType
 from path import editorPath, fileListPath, stylePath, filePath, filesPath

@@ -9,13 +9,9 @@ This is a todolist application.
 
 ## Requirement
 - Python
-- Qt4.8
-- PySide
+- PySide2 == 5.11.0
 
 ## Install
-
-[Qt4.8 Install](http://doc.qt.io/archives/qt-4.8/installation.html)
-
 [Python 2.7](https://www.python.org/downloads/)
 
 ```
@@ -24,5 +20,5 @@ pip install PySide
 ## Usage
 
 ```
-python bin/TodoList.py
+python TodoList.py
 ```
