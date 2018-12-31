@@ -15,7 +15,7 @@ This is a todolist application.
 [Python 2.7](https://www.python.org/downloads/)
 
 ```
-pip install PySide
+pip install PySide2==5.11.0
 ```
 ## Usage
 
