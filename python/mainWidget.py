@@ -9,14 +9,14 @@
 import os
 import re
 import json
+import datetime
 from PySide2 import QtCore, QtGui, QtWidgets
-
 from HighLighting import HighlightingRule, Highlighter
 from models import FileListItem, StyleItem, FolderListItem
 from enums import FileType, ItemFlags
 from path import fileListPath, iconsPath
 from preferencesDialogue import Preferences
-from widgets import ListView, TextEdit
+from widgets import ListView, TextEdit, ColorComboBox
 
 
 class Ui_Form( object ):
@@ -25,6 +25,8 @@ class Ui_Form( object ):
 		Form.resize( 868, 516 )
 		self.horizontalLayout_3 = QtWidgets.QHBoxLayout( Form )
 		self.horizontalLayout_3.setObjectName( "horizontalLayout_3" )
+		self.horizontalLayout_3.setContentsMargins( 0, 0, 0, 0 )
+		self.horizontalLayout_3.setSpacing( 0 )
 		self.fileListWidget = QtWidgets.QWidget( Form )
 		sizePolicy = QtWidgets.QSizePolicy( QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred )
 		sizePolicy.setHorizontalStretch( 0 )
@@ -35,34 +37,46 @@ class Ui_Form( object ):
 		self.verticalLayout_2 = QtWidgets.QVBoxLayout( self.fileListWidget )
 		self.verticalLayout_2.setContentsMargins( 0, 0, 0, 0 )
 		self.verticalLayout_2.setObjectName( "verticalLayout_2" )
+		self.verticalLayout_2.setSpacing(0)
 		self.searchWidgetInFileList = QtWidgets.QWidget( self.fileListWidget )
 		self.searchWidgetInFileList.setObjectName( "searchWidgetInFileList" )
-		self.horizontalLayout_2 = QtWidgets.QHBoxLayout( self.searchWidgetInFileList )
+		self.verticalLayout_4 = QtWidgets.QVBoxLayout( self.searchWidgetInFileList )
+		self.verticalLayout_4.setContentsMargins( 0, 0, 0, 0 )
+		self.verticalLayout_4.setSpacing( 0 )
+		self.horizontalLayout_2 = QtWidgets.QHBoxLayout()
 		self.horizontalLayout_2.setContentsMargins( 0, 0, 0, 0 )
 		self.horizontalLayout_2.setObjectName( "horizontalLayout_2" )
 		self.horizontalLayout_2.setSpacing( 0 )
+		# spacer = QtWidgets.QSpacerItem( 0, 0, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum )
+		# self.horizontalLayout_2.addItem(spacer)
+
 		self.searchLineBoxInFileList = QtWidgets.QLineEdit( self.searchWidgetInFileList )
 		self.searchLineBoxInFileList.setObjectName( "searchLineBoxInFileList" )
-		self.horizontalLayout_2.addWidget( self.searchLineBoxInFileList )
+		self.verticalLayout_4.addLayout( self.horizontalLayout_2 )
+
+		# colorCombobox = ColorComboBox(self.searchWidgetInFileList)
+		# self.verticalLayout_4.addWidget(colorCombobox)
+
+		self.verticalLayout_4.addWidget( self.searchLineBoxInFileList )
+
 		self.addFileWidget = QtWidgets.QWidget( self.searchWidgetInFileList )
 		self.addFileWidget.setObjectName( "addFileWidget" )
 		self.horizontalLayout_6 = QtWidgets.QHBoxLayout( self.addFileWidget )
 		self.horizontalLayout_6.setSpacing( 0 )
 		self.horizontalLayout_6.setSizeConstraint( QtWidgets.QLayout.SetDefaultConstraint )
 		self.horizontalLayout_6.setContentsMargins( 0, 0, 0, 0 )
-		self.horizontalLayout_6.setContentsMargins( 0, 0, 0, 0 )
 		self.horizontalLayout_6.setObjectName( "horizontalLayout_6" )
 		self.newFileButton = QtWidgets.QPushButton( self.addFileWidget )
 		self.newFileButton.setObjectName( "newFileButton" )
 		icon = QtGui.QIcon()
-		icon.addPixmap( QtGui.QPixmap( os.path.join( iconsPath, 'baseline_insert_drive_file_black_48dp.png' ) ) )
+		icon.addPixmap( QtGui.QPixmap( os.path.join( iconsPath, 'baseline_insert_drive_file_white_48dp.png' ) ) )
 		self.newFileButton.setIcon( icon )
 		# self.newFileButton.setIconSize( QtCore.QSize( 18, 18 ) )
 		self.horizontalLayout_6.addWidget( self.newFileButton )
 		self.newFolderButton = QtWidgets.QPushButton( self.addFileWidget )
 		self.newFolderButton.setEnabled( True )
 		icon = QtGui.QIcon()
-		icon.addPixmap( QtGui.QPixmap( os.path.join( iconsPath, 'baseline_create_new_folder_black_48dp.png' ) ) )
+		icon.addPixmap( QtGui.QPixmap( os.path.join( iconsPath, 'baseline_create_new_folder_white_48dp.png' ) ) )
 		self.newFolderButton.setIcon( icon )
 		# self.newFolderButton.setIconSize( QtCore.QSize( 18, 18 ) )
 		sizePolicy = QtWidgets.QSizePolicy( QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed )
@@ -248,12 +262,12 @@ class MainWidget( Ui_Form, QtWidgets.QWidget ):
 		self.fileListView.currentIndexChanged.connect( self.loadFile )
 		self.currentFolder.fileListModel.dataUpdated.connect( self.titleNameChanged )
 		self.timer.timeout.connect( self.saveFile )
-		self.editor.document().contentsChanged.connect( self.contentChanged )
 		self.fileListView.doubleClicked.connect( self.changeNextFolder )
 		self.replaceCheckBox.stateChanged.connect(
 			lambda value: self.replaceWidget.show() if value else self.replaceWidget.hide() )
 		self.replaceAllButton.clicked.connect( self.replaceAllText )
 		self.replaceButton.clicked.connect( self.replaceText )
+		self.editor.document().contentsChange.connect( self.contentChanged )
 
 	def nextSearchText( self ):
 		if not self.startFirst:
@@ -375,7 +389,9 @@ class MainWidget( Ui_Form, QtWidgets.QWidget ):
 	def newFile( self ):
 		filename = self.generateFileName()
 		f = open( filename, "w+" )
-		index = self.currentFolder.fileListModel.insertData( FileListItem( filename, 'New Note' ), 0 )
+		now = datetime.datetime.now()
+		index = self.currentFolder.fileListModel.insertData(
+			FileListItem( filename, 'New Note', lastUpdate = now.strftime( "%Y-%m-%d %H:%M" ) ), 0 )
 		self.titleNameChanged()
 		f.close()
 		index = self.currentFolder.fileListModel.index( index )
@@ -460,9 +476,9 @@ class MainWidget( Ui_Form, QtWidgets.QWidget ):
 		data = self.currentFolder.fileListModel.getItem( index.row() )
 		self.saveFile()
 		self.fileListView.setCurrentIndex( index )
-		self.editor.document().contentsChanged.disconnect( self.contentChanged )
+		self.editor.document().contentsChange.disconnect( self.contentChanged )
 		data.loadFile( editor = self.editor )
-		self.editor.document().contentsChanged.connect( self.contentChanged )
+		self.editor.document().contentsChange.connect( self.contentChanged )
 		self.currentFolder.currentFilePath = data.filename
 
 	def saveFile( self ):
@@ -500,8 +516,16 @@ class MainWidget( Ui_Form, QtWidgets.QWidget ):
 				if index.isValid():
 					self.loadFile( index )
 
-	def contentChanged( self ):
+	def contentChanged( self, pos, rem, add ):
 		index = self.currentFolder.fileListModel.getIndex( self.currentFolder.currentFilePath )
+		file_ = self.currentFolder.fileListModel.getItem( index )
+		# update date of the file
+		now = datetime.datetime.now()
+		newDate = now.strftime( "%Y-%m-%d %H:%M" )
+		if file_.lastUpdate != newDate:
+			file_.lastUpdate = newDate
+			self.fileListView.update()
+
 		if index != -1 and index != 0:
 			self.currentFolder.fileListModel.moveItem( index, 0 )
 			self.titleNameChanged()
