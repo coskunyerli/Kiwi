@@ -68,11 +68,12 @@ class StyleItem( object ):
 
 
 class FileListItem( object ):
-	def __init__( self, filename, title, isFixed = False ):
+	def __init__( self, filename, title, isFixed = False, lastUpdate = None ):
 		self.isFixed = isFixed
 		self.filename = filename
 		self.title = title
 		self.type = FileType.FILE
+		self.lastUpdate = lastUpdate
 
 	def loadFile( self, **kwargs ):
 		editor = kwargs.get( 'editor' )
@@ -96,11 +97,11 @@ class FileListItem( object ):
 		return self.__str__()
 
 	def json( self ):
-		return { 'filename': self.filename, 'title': self.title, 'type': self.type }
+		return { 'filename': self.filename, 'title': self.title, 'type': self.type, 'lastUpdate': self.lastUpdate }
 
 	@classmethod
 	def create( cls, dict ):
-		return FileListItem( dict['filename'], dict['title'] )
+		return FileListItem( dict['filename'], dict['title'], lastUpdate = dict.get( 'lastUpdate' ) )
 
 	def setFixed( self, result ):
 		self.isFixed = result
@@ -114,6 +115,12 @@ class FolderListItem( FileListItem ):
 		self.type = FileType.FOLDER
 		self.currentFilePath = None
 		self.setParent( parent, first = True )
+
+	def fileCount( self ):
+		if '..' in self.fileListModel:
+			return self.fileListModel.rowCount() - 1
+		else:
+			return self.fileListModel.rowCount()
 
 	def __eq__( self, other ):
 		if other is not None:
@@ -221,6 +228,12 @@ class FileListModel( QtCore.QAbstractListModel ):
 					QtCore.Qt.ItemIsDragEnabled |
 					ItemFlags.ItemIsDeletable
 			)
+
+	def index( self, row, col = 0, parent = QtCore.QModelIndex() ):
+		if row >= self.rowCount():
+			return QtCore.QModelIndex()
+		data = self.fileList[row]
+		return self.createIndex( row, col, data )
 
 	def mimeData( self, indices ):
 		mimeDat = super( FileListModel, self ).mimeData( indices )
@@ -366,11 +379,15 @@ class FileListModel( QtCore.QAbstractListModel ):
 			self.beginMoveRows( QtCore.QModelIndex(), fromItem, fromItem, QtCore.QModelIndex(), to )
 			item = self.fileList.pop( fromItem )
 			self.fileList.insert( to, item )
+
+			self.allFileList.remove( item )
+			self.allFileList.insert( to, item )
+
 			self.endMoveRows()
 
 	def _checkFile( self, from_, to ):
 		"""
-		:param from_: from index 
+		:param from_: from index
 		:param to:  to index
 		:return: find to first not fixed index between from_ and to return that index
 		"""
@@ -400,7 +417,8 @@ class FileListModel( QtCore.QAbstractListModel ):
 
 	def json( self ):
 		fileList = filter( lambda item: item.title != '..', self.allFileList )
-		return map( lambda data: data.json(), fileList )
+		json = map( lambda data: data.json(), fileList )
+		return json
 
 	def generateFileName( self ):
 		allTextFilesNumber = len( filter( lambda item: item.type == FileType.FILE, self.allFileList ) )
