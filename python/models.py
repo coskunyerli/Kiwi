@@ -1,5 +1,6 @@
 import copy
-
+import string
+import random
 import os
 from PySide2 import QtCore, QtGui, QtWidgets
 
@@ -138,11 +139,17 @@ class FolderListItem( FileListItem ):
 			self.parent = parent
 
 	def generateFileName( self ):
-		filename = self.fileListModel.generateFileName()
+		while True:
+			filename = self.fileListModel.generateFileName()
+			if not os.path.exists( filename ):
+				break
 		return os.path.join( self.filename, filename )
 
 	def generateFolderName( self ):
-		folder = self.fileListModel.generateFolderName()
+		while True:
+			folder = self.fileListModel.generateFolderName()
+			if not os.path.exists( folder ):
+				break
 		return os.path.join( self.filename, folder )
 
 	def json( self ):
@@ -250,8 +257,8 @@ class FileListModel( QtCore.QAbstractListModel ):
 				return False
 			self.deleteData( data.filename )
 			folder.fileListModel.insertData( data )
-			_, filename = os.path.split( data.filename )
 			oldFilename = data.filename
+			_, filename = os.path.split( oldFilename )
 			newFileName = ''
 			if data.type == FileType.FILE:
 				newFileName = folder.generateFileName()
@@ -421,13 +428,14 @@ class FileListModel( QtCore.QAbstractListModel ):
 		return json
 
 	def generateFileName( self ):
-		allTextFilesNumber = len( filter( lambda item: item.type == FileType.FILE, self.allFileList ) )
-		filename = 'file%d.txt' % allTextFilesNumber
+		# allTextFilesNumber = len( filter( lambda item: item.type == FileType.FILE, self.allFileList ) )
+		filename = 'file%s.txt' % ''.join(
+			random.choice( string.ascii_letters + string.digits ) for _ in range( 21 ) )
 		return filename
 
 	def generateFolderName( self ):
-		allFolderNumber = len( filter( lambda item: item.type == FileType.FOLDER, self.allFileList ) )
-		folder = 'folder%d' % allFolderNumber
+		# allFolderNumber = len( filter( lambda item: item.type == FileType.FOLDER, self.allFileList ) )
+		folder = 'folder%s' % ''.join( random.choice( string.ascii_letters + string.digits ) for _ in range( 21 ) )
 		return folder
 
 
