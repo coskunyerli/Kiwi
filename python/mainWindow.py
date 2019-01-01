@@ -61,7 +61,8 @@ class MainWindow( QtWidgets.QMainWindow ):
 	def _readFileList( self, folder, json ):
 		for file in json:
 			if file['type'] == FileType.FILE:
-				folder.fileListModel.insertData( FileListItem( file.get( 'filename' ), file.get( 'title' ) ) )
+				folder.fileListModel.insertData(
+					FileListItem( file.get( 'filename' ), file.get( 'title' ), lastUpdate = file.get( 'lastUpdate' ) ) )
 			elif file['type'] == FileType.FOLDER:
 				subFolder = FolderListItem( file['filename'], file['title'], folder )
 				folder.fileListModel.insertData( subFolder )
@@ -90,11 +91,11 @@ class MainWindow( QtWidgets.QMainWindow ):
 		action.setText( "New" )
 		fileMenu.addAction( action )
 
-		action = QtWidgets.QAction( self )
-		action.triggered.connect( self.test )
-		action.setShortcut( QtCore.Qt.CTRL + QtCore.Qt.Key_G )
-		action.setText( "Save" )
-		fileMenu.addAction( action )
+		# action = QtWidgets.QAction( self )
+		# action.triggered.connect( self.test )
+		# action.setShortcut( QtCore.Qt.CTRL + QtCore.Qt.Key_G )
+		# action.setText( "Save" )
+		# fileMenu.addAction( action )
 		action = QtWidgets.QAction( self )
 		action.triggered.connect( self.mainWidget.showSearch )
 		action.setShortcut( QtCore.Qt.CTRL + QtCore.Qt.Key_F )
@@ -107,10 +108,14 @@ class MainWindow( QtWidgets.QMainWindow ):
 		action.setText( "Preferences" )
 		fileMenu.addAction( action )
 
-	def test( self ):
-		block = self.editor.document().begin().next().next().next()
-		self.editor.document().documentLayout().setBlockVisible( block, self.visible )
-		self.visible = not self.visible
+	# def test( self ):
+	# 	block = self.editor.document().begin().next().next().next()
+	# 	self.editor.document().documentLayout().setBlockVisible( block, self.visible )
+	# 	self.visible = not self.visible
+
+	def closeEvent( self, event ):
+		self.mainWidget.titleNameChanged()
+		super( MainWindow, self ).closeEvent( event )
 
 	def setupHelpMenu( self ):
 		helpMenu = QtWidgets.QMenu( "&Help", self )
@@ -118,7 +123,7 @@ class MainWindow( QtWidgets.QMainWindow ):
 
 		action = QtWidgets.QAction( self )
 		action.triggered.connect( self.about )
-		action.setText("About" )
+		action.setText( "About" )
 		helpMenu.addAction( action )
 
 	@QtCore.Slot()
