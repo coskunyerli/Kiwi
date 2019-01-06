@@ -50,7 +50,7 @@ class MainWindow( QtWidgets.QMainWindow ):
 				fileList = json.loads( fileListFile.read() )
 			except Exception, e:
 				print 'Json Loading Error', str( e )
-				fileList = { 'filename': filesPath, 'title': 'root', 'files': [] }
+				fileList = { 'filename': filesPath, 'title': '/', 'files': [] }
 			rootFolder = FolderListItem( fileList['filename'], fileList['title'], None )
 			self._readFileList( rootFolder, fileList['files'] )
 			return rootFolder
@@ -62,9 +62,10 @@ class MainWindow( QtWidgets.QMainWindow ):
 		for file in json:
 			if file['type'] == FileType.FILE:
 				folder.fileListModel.insertData(
-					FileListItem( file.get( 'filename' ), file.get( 'title' ), lastUpdate = file.get( 'lastUpdate' ) ) )
+					FileListItem( file.get( 'filename' ), file.get( 'title' ), lastUpdate = file.get( 'lastUpdate' ),
+								  isFixed = file.get( 'isFixed', False ) ) )
 			elif file['type'] == FileType.FOLDER:
-				subFolder = FolderListItem( file['filename'], file['title'], folder )
+				subFolder = FolderListItem( file['filename'], file['title'], folder, isFixed = file.get( 'isFixed' ) )
 				folder.fileListModel.insertData( subFolder )
 				self._readFileList( subFolder, file['files'] )
 
