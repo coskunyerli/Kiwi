@@ -7,6 +7,7 @@
 #
 # WARNING! All changes made in this file will be lost!
 import os
+import shutil
 import re
 import json
 import datetime
@@ -16,7 +17,7 @@ from models import FileListItem, StyleItem, FolderListItem
 from enums import FileType, ItemFlags
 from path import fileListPath, iconsPath
 from preferencesDialogue import Preferences
-from widgets import ListView, TextEdit, ColorComboBox
+from widgets import ListView, TextEdit, ColorComboBox, AttachmentWidget
 
 
 class Ui_Form( object ):
@@ -37,7 +38,7 @@ class Ui_Form( object ):
 		self.verticalLayout_2 = QtWidgets.QVBoxLayout( self.fileListWidget )
 		self.verticalLayout_2.setContentsMargins( 0, 0, 0, 0 )
 		self.verticalLayout_2.setObjectName( "verticalLayout_2" )
-		self.verticalLayout_2.setSpacing(0)
+		self.verticalLayout_2.setSpacing( 0 )
 		self.searchWidgetInFileList = QtWidgets.QWidget( self.fileListWidget )
 		self.searchWidgetInFileList.setObjectName( "searchWidgetInFileList" )
 		self.verticalLayout_4 = QtWidgets.QVBoxLayout( self.searchWidgetInFileList )
@@ -56,8 +57,14 @@ class Ui_Form( object ):
 
 		# colorCombobox = ColorComboBox(self.searchWidgetInFileList)
 		# self.verticalLayout_4.addWidget(colorCombobox)
+		self.pathTextLabel = QtWidgets.QLabel( self.searchWidgetInFileList )
+		self.pathTextLabel.setIndent( 6 )
+		self.pathTextLabel.setMargin( 2 )
+		self.pathTextLabel.setText( '/' )
+		self.pathTextLabel.setStyleSheet( 'color:gray' )
 
 		self.verticalLayout_4.addWidget( self.searchLineBoxInFileList )
+		self.verticalLayout_4.addWidget( self.pathTextLabel )
 
 		self.addFileWidget = QtWidgets.QWidget( self.searchWidgetInFileList )
 		self.addFileWidget.setObjectName( "addFileWidget" )
@@ -90,6 +97,18 @@ class Ui_Form( object ):
 		self.fileListView.setObjectName( "fileListView" )
 		self.verticalLayout_2.addWidget( self.fileListView )
 		self.horizontalLayout_3.addWidget( self.fileListWidget )
+
+		# self.tabFrame = QtWidgets.QFrame( Form )
+		# self.tabFrame.setStyleSheet( 'background-color:rgb(42,42,42)' )
+		# self.tabFrameLayout = QtWidgets.QVBoxLayout( self.tabFrame )
+		# self.tabFrameLayout.setContentsMargins( 0, 8, 0, 0 )
+		#
+		# #self.tabWidget = QtWidgets.QTabWidget( self.tabFrame )
+		# #self.tabFrameLayout.addWidget( self.tabWidget )
+		#
+		# #self.tabWidget.setObjectName( "tabWidget" )
+		# #self.tabWidget.setTabShape( QtWidgets.QTabWidget.Rounded )
+
 		self.editorWidget = QtWidgets.QWidget( Form )
 		sizePolicy = QtWidgets.QSizePolicy( QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred )
 		sizePolicy.setHorizontalStretch( 1 )
@@ -101,49 +120,39 @@ class Ui_Form( object ):
 		self.verticalLayout.setSpacing( 0 )
 		self.verticalLayout.setContentsMargins( 0, 0, 0, 0 )
 		self.verticalLayout.setObjectName( "verticalLayout" )
+
 		self.searchWidgetInEditor = QtWidgets.QWidget( self.editorWidget )
 		self.searchWidgetInEditor.setObjectName( "searchWidgetInEditor" )
 		self.verticalLayout_3 = QtWidgets.QVBoxLayout( self.searchWidgetInEditor )
 		self.verticalLayout_3.setSpacing( 0 )
-		self.verticalLayout_3.setContentsMargins( 12, 0, -1, 0 )
+		self.verticalLayout_3.setContentsMargins( 12, 0, 0, 0 )
 		self.verticalLayout_3.setObjectName( "verticalLayout_3" )
 		self.searchWidget = QtWidgets.QWidget( self.searchWidgetInEditor )
 		self.searchWidget.setObjectName( "searchWidget" )
 		self.horizontalLayout_5 = QtWidgets.QHBoxLayout( self.searchWidget )
-		self.horizontalLayout_5.setSpacing( -1 )
-		self.horizontalLayout_5.setContentsMargins( -1, 0, -1, 0 )
+		self.horizontalLayout_5.setSpacing( 0 )
+		self.horizontalLayout_5.setContentsMargins( 0, 0, 0, 0 )
 		self.horizontalLayout_5.setObjectName( "horizontalLayout_5" )
 		self.searchLineBoxInEditor = QtWidgets.QLineEdit( self.searchWidget )
 		self.searchLineBoxInEditor.setObjectName( "searchLineBoxInEditor" )
 		self.horizontalLayout_5.addWidget( self.searchLineBoxInEditor )
-		self.widget = QtWidgets.QWidget( self.searchWidget )
-		self.widget.setObjectName( "widget" )
-		self.horizontalLayout = QtWidgets.QHBoxLayout( self.widget )
-		self.horizontalLayout.setSpacing( 0 )
-		self.horizontalLayout.setSizeConstraint( QtWidgets.QLayout.SetDefaultConstraint )
-		self.horizontalLayout.setContentsMargins( 0, 0, 0, 0 )
-		self.horizontalLayout.setContentsMargins( 0, 0, 0, 0 )
-		self.horizontalLayout.setObjectName( "horizontalLayout" )
-		self.prevWordButton = QtWidgets.QPushButton( self.widget )
+		spacer = QtWidgets.QSpacerItem( 16, 0, QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Minimum )
+		self.horizontalLayout_5.addItem( spacer )
+		self.prevWordButton = QtWidgets.QPushButton( self.searchWidget )
 		self.prevWordButton.setObjectName( "prevWordButton" )
-		self.horizontalLayout.addWidget( self.prevWordButton )
-		self.nextWordButton = QtWidgets.QPushButton( self.widget )
+		self.horizontalLayout_5.addWidget( self.prevWordButton )
+		self.nextWordButton = QtWidgets.QPushButton( self.searchWidget )
 		self.nextWordButton.setEnabled( True )
-		sizePolicy = QtWidgets.QSizePolicy( QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed )
-		sizePolicy.setHorizontalStretch( 0 )
-		sizePolicy.setVerticalStretch( 0 )
-		sizePolicy.setHeightForWidth( self.nextWordButton.sizePolicy().hasHeightForWidth() )
-		self.nextWordButton.setSizePolicy( sizePolicy )
-		self.nextWordButton.setMaximumSize( QtCore.QSize( 16777215, 16777215 ) )
-		self.nextWordButton.setStyleSheet( "" )
-		self.nextWordButton.setAutoDefault( False )
-		self.nextWordButton.setFlat( False )
 		self.nextWordButton.setObjectName( "nextWordButton" )
-		self.horizontalLayout.addWidget( self.nextWordButton )
-		self.horizontalLayout_5.addWidget( self.widget )
+		self.horizontalLayout_5.addWidget( self.nextWordButton )
+		spacer2 = QtWidgets.QSpacerItem( 16, 0, QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Minimum )
+		self.horizontalLayout_5.addItem( spacer2 )
+
 		self.doneButton = QtWidgets.QPushButton( self.searchWidget )
 		self.doneButton.setObjectName( "doneButton" )
 		self.horizontalLayout_5.addWidget( self.doneButton )
+		spacer3 = QtWidgets.QSpacerItem( 12, 0, QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Minimum )
+		self.horizontalLayout_5.addItem( spacer3 )
 		self.replaceCheckBox = QtWidgets.QCheckBox( self.searchWidget )
 		self.replaceCheckBox.setObjectName( "replaceCheckBox" )
 		self.horizontalLayout_5.addWidget( self.replaceCheckBox )
@@ -151,23 +160,37 @@ class Ui_Form( object ):
 		self.replaceWidget = QtWidgets.QWidget( self.searchWidgetInEditor )
 		self.replaceWidget.setObjectName( "replaceWidget" )
 		self.horizontalLayout_4 = QtWidgets.QHBoxLayout( self.replaceWidget )
-		self.horizontalLayout_4.setContentsMargins( -1, 0, -1, 12 )
+		self.horizontalLayout_4.setContentsMargins( 0, 0, 0, 0 )
+		self.horizontalLayout_4.setSpacing( 0 )
 		self.horizontalLayout_4.setObjectName( "horizontalLayout_4" )
 		self.replaceLineEdit = QtWidgets.QLineEdit( self.replaceWidget )
 		self.replaceLineEdit.setObjectName( "replaceLineEdit" )
 		self.horizontalLayout_4.addWidget( self.replaceLineEdit )
+		spacer4 = QtWidgets.QSpacerItem( 16, 0, QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Minimum )
+		self.horizontalLayout_4.addItem( spacer4 )
 		self.replaceButton = QtWidgets.QPushButton( self.replaceWidget )
 		self.replaceButton.setObjectName( "replaceButton" )
 		self.horizontalLayout_4.addWidget( self.replaceButton )
 		self.replaceAllButton = QtWidgets.QPushButton( self.replaceWidget )
 		self.replaceAllButton.setObjectName( "replaceAllButton" )
 		self.horizontalLayout_4.addWidget( self.replaceAllButton )
+
 		self.verticalLayout_3.addWidget( self.replaceWidget )
 		self.verticalLayout.addWidget( self.searchWidgetInEditor )
+
 		self.editor = TextEdit( self.editorWidget )
 		self.editor.document().setDocumentMargin( 16 )
 		self.editor.setObjectName( "editor" )
+		self.editor.setFrameStyle( QtWidgets.QFrame.NoFrame )
+		self.editor.setMinimumWidth( 400 )
 		self.verticalLayout.addWidget( self.editor )
+
+		# self.attachmentWidget = AttachmentWidget( self.tabWidget )
+		# self.attachmentWidget.setObjectName( 'attachment' )
+
+		# self.tabWidget.addTab( self.editorWidget, 'Editor' )
+		# self.tabWidget.addTab( self.attachmentWidget, 'Attachments' )
+		# self.tabFrameLayout.addWidget( self.editorWidget )
 		self.horizontalLayout_3.addWidget( self.editorWidget )
 
 		self.retranslateUi( Form )
@@ -175,8 +198,8 @@ class Ui_Form( object ):
 
 	def retranslateUi( self, Form ):
 		Form.setWindowTitle( "Form" )
-		self.newFileButton.setText( "" )
-		self.newFolderButton.setText( "" )
+		self.newFileButton.setText( "File" )
+		self.newFolderButton.setText( "Folder" )
 		self.searchLineBoxInEditor.setPlaceholderText( "Find" )
 		self.prevWordButton.setText( "<" )
 		self.nextWordButton.setText( ">" )
@@ -205,14 +228,19 @@ class MainWidget( Ui_Form, QtWidgets.QWidget ):
 		self.editor.setAcceptDrops( True )
 		self.editor.document().setPageSize( QtCore.QSizeF( 500, 200 ) )
 		self.fileListView.setAttribute( QtCore.Qt.WA_MacShowFocusRect, 0 )
+		self.enterFolderShortcut = QtWidgets.QShortcut( self.fileListView )
+		self.enterFolderShortcut.setContext( QtCore.Qt.WidgetShortcut )
+		self.enterFolderShortcut.setKey( QtGui.QKeySequence( QtCore.Qt.Key_Return ) )
+		self.enterFolderShortcut.activated.connect( self.changeNextFolder )
+
 		self.deleteItemShortCut = QtWidgets.QShortcut( self.fileListView )
 		self.deleteItemShortCut.setContext( QtCore.Qt.WidgetShortcut )
 		self.deleteItemShortCut.setKey( QtGui.QKeySequence( QtCore.Qt.Key_Backspace ) )
 		self.deleteItemShortCut.activated.connect( self.delete )
-		self.reformatShortCut = QtWidgets.QShortcut( self.editor )
-		self.reformatShortCut.setContext( QtCore.Qt.WidgetShortcut )
-		self.reformatShortCut.setKey( QtGui.QKeySequence( 'Ctrl+Alt+K' ) )
-		self.reformatShortCut.activated.connect( self.reformatBlocks )
+		# self.reformatShortCut = QtWidgets.QShortcut( self.editor )
+		# self.reformatShortCut.setContext( QtCore.Qt.WidgetShortcut )
+		# self.reformatShortCut.setKey( QtGui.QKeySequence( 'Ctrl+Alt+K' ) )
+		# self.reformatShortCut.activated.connect( self.reformatBlocks )
 		self.quitSearchWordShortcut = QtWidgets.QShortcut( self.searchWidgetInEditor )
 		self.quitSearchWordShortcut.setContext( QtCore.Qt.WidgetWithChildrenShortcut )
 		self.quitSearchWordShortcut.setKey( QtGui.QKeySequence( QtCore.Qt.Key_Escape ) )
@@ -225,6 +253,11 @@ class MainWidget( Ui_Form, QtWidgets.QWidget ):
 		self.cdShortcut.setContext( QtCore.Qt.WidgetWithChildrenShortcut )
 		self.cdShortcut.setKey( QtGui.QKeySequence( QtCore.Qt.Key_Escape ) )
 		self.cdShortcut.activated.connect( self.changePrevFolder )
+		self.pinnedFileShortcut = QtWidgets.QShortcut( self.parent() )
+		self.pinnedFileShortcut.setContext( QtCore.Qt.WidgetWithChildrenShortcut )
+		self.pinnedFileShortcut.setKey( QtGui.QKeySequence( 'Ctrl+P' ) )
+		self.pinnedFileShortcut.activated.connect( self.pinnedItem )
+
 		self.fileListView.setModel( self.currentFolder.fileListModel )
 		self.fileListView.setEditor( self )
 		if self.rootFolder.isEmpty():
@@ -248,7 +281,6 @@ class MainWidget( Ui_Form, QtWidgets.QWidget ):
 		self.editor.setFocus()
 		self.fileListView.setAcceptDrops( True )
 		self.fileListView.setDragEnabled( True )
-		# self.fileListView.setDragDropMode( QtWidgets.QAbstractItemView.InternalMove )
 		self.currentFolder.fileListModel.modelReset.connect( self.setCurrentIndexOfListView )
 
 	def initSignalsAndSlots( self ):
@@ -356,6 +388,14 @@ class MainWidget( Ui_Form, QtWidgets.QWidget ):
 		self.editor.setTextCursor( cursor )
 		self.nextSearchText()
 
+	def pinnedItem( self ):
+		index = self.fileListView.currentIndex()
+		data = index.internalPointer()
+		data.setFixed( not data.isFixed )
+		if data.isFixed:
+			index.model().moveItem( index.row(), 0 )
+		self.fileListView.update()
+
 	def replaceNextText( self, cursor ):
 		oldWord = self.searchLineBoxInEditor.text()
 		if oldWord and cursor.hasSelection():
@@ -421,9 +461,11 @@ class MainWidget( Ui_Form, QtWidgets.QWidget ):
 			if index.isValid():
 				parent.loadFile( editor = self.editor )
 				self.fileListView.setCurrentIndex( index )
+			self.pathTextLabel.setText( parent.path() )
 			self.currentFolder.currentFilePath = None
 		else:
 			print 'Folder is root folder'
+			exit( 0 )
 
 	def changeNextFolder( self ):
 		data = self.currentFolder.fileListModel.getItem( self.fileListView.currentIndex().row() )
@@ -436,8 +478,10 @@ class MainWidget( Ui_Form, QtWidgets.QWidget ):
 			self.currentFolder.currentFilePath = None
 			data.currentFilePath = None
 			self.currentFolder = data
+			self.fileListView.setCurrentIndex( self.currentFolder.fileListModel.index( 0 ) )
 			self.currentFolder.fileListModel.dataUpdated.connect( self.titleNameChanged )
 			self.editor.clear()
+			self.pathTextLabel.setText( data.path() )
 			self.editor.document().blockSignals( False )
 
 	def searchFileNames( self, text ):
@@ -505,10 +549,9 @@ class MainWidget( Ui_Form, QtWidgets.QWidget ):
 					if data.type == FileType.FILE:
 						os.remove( data.filename )
 					elif data.type == FileType.FOLDER:
-						os.removedirs( data.filename )
+						shutil.rmtree( data.filename )
 				except OSError as e:
 					print "Failed with:", e.strerror
-					print "Error code:", e.code
 
 				self.titleNameChanged()
 				self.currentFolder.currentFilePath = None
