@@ -1,6 +1,9 @@
+import os
+
 from PySide2 import QtGui, QtCore, QtWidgets
 
 from enums import ItemFlags, FileType
+from python.path import iconsPath
 
 
 class FileViewDelagete( QtWidgets.QStyledItemDelegate ):
@@ -54,8 +57,18 @@ class FileViewDelagete( QtWidgets.QStyledItemDelegate ):
 
 		painter.restore()
 
+		painter.setPen( QtGui.QColor( '#D3D7E3' ) )
 		textRect = rect.adjusted( iconRect.right() + 8, 0, 0, 0 )
-		painter.drawText( textRect, QtCore.Qt.AlignVCenter, data.title )
+		painter.drawText( textRect, QtCore.Qt.AlignVCenter, index.model().data( index ) )
+
+		if data.isFixed and not index.model().flags( index ) & ItemFlags.ItemIsSoftLink:
+			pinPixmap = QtGui.QPixmap( os.path.join( iconsPath, 'pin.png' ) )
+
+			pinPixmapSize = pinPixmap.size() / 3.5
+			pinRect = QtCore.QRect(
+				rect.topRight() + QtCore.QPoint( -pinPixmapSize.width() - 4, 8 ),
+				pinPixmapSize )
+			painter.drawPixmap( pinRect, pinPixmap, pinPixmap.rect() )
 
 	def sizeHint( self, option, index ):
 		size = super( FileViewDelagete, self ).sizeHint( option, index )
@@ -86,15 +99,20 @@ class ListView( QtWidgets.QListView ):
 		globalPos = self.mapToGlobal( pos )
 		index = self.currentIndex()
 		model = self.model()
+		data = index.internalPointer()
 		contextMenu = QtWidgets.QMenu()
-		renameItem = contextMenu.addAction( "Rename" )
-		deleteItem = contextMenu.addAction( 'Delete' )
+		fixItem = ''
+		renameItem = ''
+		deleteItem = ''
+		if not model.flags( index ) & ItemFlags.ItemIsSoftLink and data is not None:
+			fixItem = contextMenu.addAction( 'Unpinned' if data.isFixed else 'Pinned' )
+			renameItem = contextMenu.addAction( "Rename" )
+			deleteItem = contextMenu.addAction( 'Delete' )
+
 		contextMenu.addSeparator()
 		newFile = contextMenu.addAction( 'New Note' )
 		newFolder = contextMenu.addAction( 'New Folder' )
 
-		renameItem.setEnabled( model.flags( index ) & ItemFlags.ItemIsEditable )
-		deleteItem.setEnabled( model.flags( index ) & ItemFlags.ItemIsDeletable )
 		action = contextMenu.exec_( globalPos )
 
 		if action == renameItem:
@@ -105,6 +123,8 @@ class ListView( QtWidgets.QListView ):
 			self.newFile()
 		elif action == newFolder:
 			self.newFolder()
+		elif action == fixItem:
+			self.mainWidget.pinnedItem()
 
 	def rename( self ):
 		index = self.currentIndex()
@@ -125,6 +145,31 @@ class ListView( QtWidgets.QListView ):
 
 
 class TextEdit( QtWidgets.QTextEdit ):
+
+	# def contextMenuEvent( self, event ):
+	# 	"""
+	# 	Right click popup, Added font and alignment into popup widget. User can change font of selected text or block of
+	# 	alignment
+	#
+	# 	:param event:
+	# 	:return:
+	# 	"""
+	# 	contextMenu = self.createStandardContextMenu()
+	# 	cursor = self.cursorForPosition( event.pos() ) if not self.textCursor().hasSelection() else self.textCursor()
+	# 	# styleMenu = QtWidgets.QMenu( 'Style' )
+	# 	# styleMenu.addAction( 'Font' )
+	# 	# alignmentMenu = QtWidgets.QMenu( 'Alignment' )
+	# 	action = contextMenu.addAction( 'Insert Table' )
+	# 	# alignmentMenu.addAction( 'Center' )
+	# 	# alignmentMenu.addAction( 'Right' )
+	# 	# styleMenu.addMenu( alignmentMenu )
+	# 	# contextMenu.addMenu( styleMenu )
+	# 	action.triggered.connect( self.test )
+	# 	contextMenu.exec_( event.globalPos() )
+	#
+	# def test( self ):
+	# 	print self.textCursor().insertTable( 4, 4 )
+
 	def dragEnterEvent( self, event ):
 		if event.mimeData().hasUrls():
 			event.acceptProposedAction()
@@ -149,6 +194,20 @@ class TextEdit( QtWidgets.QTextEdit ):
 					file_, self.document().pageSize().width() - 2 * self.document().documentMargin()) )
 				cursor.insertBlock()
 				cursor.endEditBlock()
+
+
+class AttachmentWidget( QtWidgets.QWidget ):
+	def __init__( self, parent = None ):
+		super( AttachmentWidget, self ).__init__( parent )
+		self._file = None
+		# burada attachment dosyalari olacak, herhangi bir dosya olabilir
+
+
+	def setFile( self, file_ ):
+		self._file = file_
+
+	def file( self ):
+		return self._file
 
 
 class ColorComboBox( QtWidgets.QComboBox ):
