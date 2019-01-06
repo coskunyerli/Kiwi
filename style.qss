@@ -18,6 +18,12 @@ QLineEdit:selected {
     border: none;
 }
 
+QLineEdit{
+background-color: rgb(97, 98, 99);
+border-radius:3px;
+color:rgb(225,225,225);
+}
+
 
 QDialog {
     background-color: rgb(60, 63, 65);
