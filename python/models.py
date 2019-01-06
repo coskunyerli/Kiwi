@@ -69,10 +69,11 @@ class StyleItem( object ):
 
 
 class FileListItem( object ):
-	def __init__( self, filename, title, isFixed = False, lastUpdate = None ):
+	def __init__( self, filename, title, isFixed = False, lastUpdate = None, displayName = None ):
 		self.isFixed = isFixed
 		self.filename = filename
 		self.title = title
+		self.displayName = displayName if displayName else title
 		self.type = FileType.FILE
 		self.lastUpdate = lastUpdate
 
@@ -98,19 +99,21 @@ class FileListItem( object ):
 		return self.__str__()
 
 	def json( self ):
-		return { 'filename': self.filename, 'title': self.title, 'type': self.type, 'lastUpdate': self.lastUpdate }
+		return { 'filename': self.filename, 'title': self.title, 'type': self.type, 'lastUpdate': self.lastUpdate,
+				 'isFixed': self.isFixed }
 
 	@classmethod
 	def create( cls, dict ):
-		return FileListItem( dict['filename'], dict['title'], lastUpdate = dict.get( 'lastUpdate' ) )
+		return FileListItem( dict['filename'], dict['title'], lastUpdate = dict.get( 'lastUpdate' ),
+							 isFixed = dict.get( 'isFixed' ) )
 
 	def setFixed( self, result ):
 		self.isFixed = result
 
 
 class FolderListItem( FileListItem ):
-	def __init__( self, foldername, title, parent ):
-		super( FolderListItem, self ).__init__( foldername, title )
+	def __init__( self, foldername, title, parent, displayName = None, isFixed = False ):
+		super( FolderListItem, self ).__init__( foldername, title, isFixed = isFixed, displayName = displayName )
 		self.fileListModel = FileListModel( None, self )
 		self.parent = None
 		self.type = FileType.FOLDER
@@ -123,6 +126,9 @@ class FolderListItem( FileListItem ):
 		else:
 			return self.fileListModel.rowCount()
 
+	def path( self ):
+		return self.title
+
 	def __eq__( self, other ):
 		if other is not None:
 			return self.filename == other.filename
@@ -133,7 +139,7 @@ class FolderListItem( FileListItem ):
 			if not first:
 				self.fileListModel.deleteItem( self.parent )
 			item = parent.copy()
-			item.title = '..'
+			item.displayName = '..'
 			item.setFixed( True )
 			self.fileListModel.insertData( item, index = 0 )
 			self.parent = parent
@@ -206,7 +212,7 @@ class FileListModel( QtCore.QAbstractListModel ):
 
 	def __contains__( self, item ):
 		for data in self.fileList:
-			if data.title == item:
+			if data.displayName == item:
 				return True
 		return False
 
@@ -216,7 +222,8 @@ class FileListModel( QtCore.QAbstractListModel ):
 			return (
 					QtCore.Qt.ItemIsDropEnabled |
 					QtCore.Qt.ItemIsSelectable |
-					QtCore.Qt.ItemIsEnabled
+					QtCore.Qt.ItemIsEnabled |
+					ItemFlags.ItemIsSoftLink
 			)
 		if isinstance( data, FolderListItem ):
 			return (
@@ -278,9 +285,9 @@ class FileListModel( QtCore.QAbstractListModel ):
 			return None
 		item = self.fileList[index.row()]
 		if role == QtCore.Qt.DisplayRole:
-			return item.title
+			return item.displayName
 		elif role == QtCore.Qt.EditRole:
-			return item.title
+			return item.displayName
 		elif role == QtCore.Qt.DecorationRole:
 			data = self.fileList[index.row()]
 			if isinstance( data, FolderListItem ):
@@ -299,6 +306,7 @@ class FileListModel( QtCore.QAbstractListModel ):
 				if newModelItem.strip() == '' or newModelItem == oldModelItem.title:
 					return False
 				oldModelItem.title = newModelItem
+				oldModelItem.displayName = newModelItem
 				newModelItem = oldModelItem
 			self.fileList[row] = newModelItem
 			self.dataUpdated.emit( newModelItem, oldModelItem, row )
@@ -381,6 +389,8 @@ class FileListModel( QtCore.QAbstractListModel ):
 		return -1
 
 	def moveItem( self, fromItem, to ):
+		if fromItem == to:
+			return
 		to = self._checkFile( fromItem, to )
 		if fromItem != to:
 			self.beginMoveRows( QtCore.QModelIndex(), fromItem, fromItem, QtCore.QModelIndex(), to )
@@ -423,7 +433,7 @@ class FileListModel( QtCore.QAbstractListModel ):
 		return self._updateDataSignal
 
 	def json( self ):
-		fileList = filter( lambda item: item.title != '..', self.allFileList )
+		fileList = filter( lambda item: item.displayName != '..', self.allFileList )
 		json = map( lambda data: data.json(), fileList )
 		return json
 
