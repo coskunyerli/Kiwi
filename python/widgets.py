@@ -61,14 +61,25 @@ class FileViewDelagete( QtWidgets.QStyledItemDelegate ):
 		textRect = rect.adjusted( iconRect.right() + 8, 0, 0, 0 )
 		painter.drawText( textRect, QtCore.Qt.AlignVCenter, index.model().data( index ) )
 
-		if data.isFixed and not index.model().flags( index ) & ItemFlags.ItemIsSoftLink:
-			pinPixmap = QtGui.QPixmap( os.path.join( iconsPath, 'pin.png' ) )
+		if not index.model().flags( index ) & ItemFlags.ItemIsSoftLink:
+			if data.isFixed:
+				pinPixmap = QtGui.QPixmap( os.path.join( iconsPath, 'pin.png' ) )
 
-			pinPixmapSize = pinPixmap.size() / 3.5
-			pinRect = QtCore.QRect(
-				rect.topRight() + QtCore.QPoint( -pinPixmapSize.width() - 4, 8 ),
-				pinPixmapSize )
-			painter.drawPixmap( pinRect, pinPixmap, pinPixmap.rect() )
+				pinPixmapSize = pinPixmap.size() / 3.5
+				pinRect = QtCore.QRect(
+					rect.topRight() + QtCore.QPoint( -pinPixmapSize.width() - 4, 4 ),
+					pinPixmapSize )
+				painter.drawPixmap( pinRect, pinPixmap, pinPixmap.rect() )
+			if data.isLocked is not None:
+				if data.isLocked:
+					lockPixmap = QtGui.QPixmap( os.path.join( iconsPath, 'lock.png' ) )
+				else:
+					lockPixmap = QtGui.QPixmap( os.path.join( iconsPath, 'lock-open.png' ) )
+				lockPixmapSize = lockPixmap.size() / 4.5
+				lockRect = QtCore.QRect(
+					rect.topLeft() + QtCore.QPoint( 4, 4 ),
+					lockPixmapSize )
+				painter.drawPixmap( lockRect, lockPixmap, lockPixmap.rect() )
 
 	def sizeHint( self, option, index ):
 		size = super( FileViewDelagete, self ).sizeHint( option, index )
@@ -104,10 +115,23 @@ class ListView( QtWidgets.QListView ):
 		fixItem = ''
 		renameItem = ''
 		deleteItem = ''
+		passwordItem = ''
 		if not model.flags( index ) & ItemFlags.ItemIsSoftLink and data is not None:
-			fixItem = contextMenu.addAction( 'Unpinned' if data.isFixed else 'Pinned' )
+			fixItem = contextMenu.addAction( 'Unpin Note' if data.isFixed else 'Pin Note' )
 			renameItem = contextMenu.addAction( "Rename" )
 			deleteItem = contextMenu.addAction( 'Delete' )
+			contextMenu.addSeparator()
+			if data.isLocked is None:
+				passText = "Set Password"
+			else:
+				passText = "Remove Password"
+				if data.isLocked:
+					lockText = 'Unlock'
+				else:
+					lockText = 'Lock'
+
+				lockItem = contextMenu.addAction( lockText )
+			passwordItem = contextMenu.addAction( passText )
 
 		contextMenu.addSeparator()
 		newFile = contextMenu.addAction( 'New Note' )
@@ -125,6 +149,8 @@ class ListView( QtWidgets.QListView ):
 			self.newFolder()
 		elif action == fixItem:
 			self.mainWidget.pinnedItem()
+		elif action == passwordItem:
+			self.setPassword()
 
 	def rename( self ):
 		index = self.currentIndex()
@@ -133,6 +159,14 @@ class ListView( QtWidgets.QListView ):
 														  QtWidgets.QLineEdit.Normal )
 		if result:
 			model.setData( index, newText )
+
+	def setPassword( self ):
+		index = self.currentIndex()
+		password, result = QtWidgets.QInputDialog.getText( self, 'Set Password', 'Enter a password',
+														   QtWidgets.QLineEdit.Password )
+		if password and result and index.isValid():
+			data = index.internalPointer()
+			data.isLocked = True
 
 	def delete( self ):
 		self.mainWidget.delete()
@@ -146,29 +180,11 @@ class ListView( QtWidgets.QListView ):
 
 class TextEdit( QtWidgets.QTextEdit ):
 
-	# def contextMenuEvent( self, event ):
-	# 	"""
-	# 	Right click popup, Added font and alignment into popup widget. User can change font of selected text or block of
-	# 	alignment
-	#
-	# 	:param event:
-	# 	:return:
-	# 	"""
-	# 	contextMenu = self.createStandardContextMenu()
-	# 	cursor = self.cursorForPosition( event.pos() ) if not self.textCursor().hasSelection() else self.textCursor()
-	# 	# styleMenu = QtWidgets.QMenu( 'Style' )
-	# 	# styleMenu.addAction( 'Font' )
-	# 	# alignmentMenu = QtWidgets.QMenu( 'Alignment' )
-	# 	action = contextMenu.addAction( 'Insert Table' )
-	# 	# alignmentMenu.addAction( 'Center' )
-	# 	# alignmentMenu.addAction( 'Right' )
-	# 	# styleMenu.addMenu( alignmentMenu )
-	# 	# contextMenu.addMenu( styleMenu )
-	# 	action.triggered.connect( self.test )
-	# 	contextMenu.exec_( event.globalPos() )
-	#
-	# def test( self ):
-	# 	print self.textCursor().insertTable( 4, 4 )
+	def focusInEvent( self, event ):
+		super( TextEdit, self ).focusInEvent( event )
+		cursor = self.textCursor()
+		cursor.movePosition( QtGui.QTextCursor.End )
+		self.setTextCursor( cursor )
 
 	def dragEnterEvent( self, event ):
 		if event.mimeData().hasUrls():
@@ -200,8 +216,8 @@ class AttachmentWidget( QtWidgets.QWidget ):
 	def __init__( self, parent = None ):
 		super( AttachmentWidget, self ).__init__( parent )
 		self._file = None
-		# burada attachment dosyalari olacak, herhangi bir dosya olabilir
 
+	# burada attachment dosyalari olacak, herhangi bir dosya olabilir
 
 	def setFile( self, file_ ):
 		self._file = file_

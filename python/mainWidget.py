@@ -20,6 +20,7 @@ from preferencesDialogue import Preferences
 from widgets import ListView, TextEdit, ColorComboBox, AttachmentWidget
 
 
+
 class Ui_Form( object ):
 	def setupUi( self, Form ):
 		Form.setObjectName( "Form" )
@@ -59,7 +60,6 @@ class Ui_Form( object ):
 		# self.verticalLayout_4.addWidget(colorCombobox)
 		self.pathTextLabel = QtWidgets.QLabel( self.searchWidgetInFileList )
 		self.pathTextLabel.setIndent( 6 )
-		self.pathTextLabel.setMargin( 2 )
 		self.pathTextLabel.setText( '/' )
 		self.pathTextLabel.setStyleSheet( 'color:gray' )
 
@@ -196,6 +196,7 @@ class Ui_Form( object ):
 		self.retranslateUi( Form )
 		QtCore.QMetaObject.connectSlotsByName( Form )
 
+
 	def retranslateUi( self, Form ):
 		Form.setWindowTitle( "Form" )
 		self.newFileButton.setText( "File" )
@@ -208,6 +209,7 @@ class Ui_Form( object ):
 		self.replaceLineEdit.setPlaceholderText( "Replace" )
 		self.replaceButton.setText( "Replace" )
 		self.replaceAllButton.setText( "All" )
+
 
 
 class MainWidget( Ui_Form, QtWidgets.QWidget ):
@@ -224,9 +226,9 @@ class MainWidget( Ui_Form, QtWidgets.QWidget ):
 		self.initSignalsAndSlots()
 		self.initialize()
 
+
 	def initialize( self ):
 		self.editor.setAcceptDrops( True )
-		self.editor.document().setPageSize( QtCore.QSizeF( 500, 200 ) )
 		self.fileListView.setAttribute( QtCore.Qt.WA_MacShowFocusRect, 0 )
 		self.enterFolderShortcut = QtWidgets.QShortcut( self.fileListView )
 		self.enterFolderShortcut.setContext( QtCore.Qt.WidgetShortcut )
@@ -237,14 +239,12 @@ class MainWidget( Ui_Form, QtWidgets.QWidget ):
 		self.deleteItemShortCut.setContext( QtCore.Qt.WidgetShortcut )
 		self.deleteItemShortCut.setKey( QtGui.QKeySequence( QtCore.Qt.Key_Backspace ) )
 		self.deleteItemShortCut.activated.connect( self.delete )
-		# self.reformatShortCut = QtWidgets.QShortcut( self.editor )
-		# self.reformatShortCut.setContext( QtCore.Qt.WidgetShortcut )
-		# self.reformatShortCut.setKey( QtGui.QKeySequence( 'Ctrl+Alt+K' ) )
-		# self.reformatShortCut.activated.connect( self.reformatBlocks )
-		self.quitSearchWordShortcut = QtWidgets.QShortcut( self.searchWidgetInEditor )
-		self.quitSearchWordShortcut.setContext( QtCore.Qt.WidgetWithChildrenShortcut )
-		self.quitSearchWordShortcut.setKey( QtGui.QKeySequence( QtCore.Qt.Key_Escape ) )
-		self.quitSearchWordShortcut.activated.connect( self.hideSearchWidgetInEditor )
+
+		self.focusListShortCut = QtWidgets.QShortcut( self )
+		self.focusListShortCut.setContext( QtCore.Qt.WidgetWithChildrenShortcut )
+		self.focusListShortCut.setKey( QtGui.QKeySequence( 'Ctrl+L' ) )
+		self.focusListShortCut.activated.connect( self.changeFocus )
+
 		self.nextWordSearchWordShortcut = QtWidgets.QShortcut( self.searchWidgetInEditor )
 		self.nextWordSearchWordShortcut.setContext( QtCore.Qt.WidgetWithChildrenShortcut )
 		self.nextWordSearchWordShortcut.setKey( QtGui.QKeySequence( QtCore.Qt.Key_Return ) )
@@ -283,6 +283,7 @@ class MainWidget( Ui_Form, QtWidgets.QWidget ):
 		self.fileListView.setDragEnabled( True )
 		self.currentFolder.fileListModel.modelReset.connect( self.setCurrentIndexOfListView )
 
+
 	def initSignalsAndSlots( self ):
 		self.doneButton.clicked.connect( self.hideSearchWidgetInEditor )
 		self.prevWordButton.clicked.connect( self.prevSearchText )
@@ -301,6 +302,7 @@ class MainWidget( Ui_Form, QtWidgets.QWidget ):
 		self.replaceButton.clicked.connect( self.replaceText )
 		self.editor.document().contentsChange.connect( self.contentChanged )
 
+
 	def nextSearchText( self ):
 		if not self.startFirst:
 			if not self._nextSearchText():
@@ -308,6 +310,7 @@ class MainWidget( Ui_Form, QtWidgets.QWidget ):
 		else:
 			self._nextSearchText( 0 )
 			self.startFirst = False
+
 
 	def _nextSearchText( self, position = None ):
 		cursor = self.editor.textCursor()
@@ -332,6 +335,7 @@ class MainWidget( Ui_Form, QtWidgets.QWidget ):
 			text = block.text()
 		return False
 
+
 	def prevSearchText( self ):
 		if not self.startLast:
 			if not self._prevSearchText():
@@ -339,6 +343,7 @@ class MainWidget( Ui_Form, QtWidgets.QWidget ):
 		else:
 			self._prevSearchText( self.editor.document().characterCount() - 1 )
 			self.startLast = False
+
 
 	def _prevSearchText( self, position = None ):
 		cursor = self.editor.textCursor()
@@ -363,6 +368,7 @@ class MainWidget( Ui_Form, QtWidgets.QWidget ):
 			text = block.text()
 		return False
 
+
 	def replaceAllText( self ):
 		oldWord = self.searchLineBoxInEditor.text()
 		if oldWord:
@@ -383,10 +389,20 @@ class MainWidget( Ui_Form, QtWidgets.QWidget ):
 				block = block.next()
 			cursor.endEditBlock()
 
+
+	def changeFocus( self ):
+		# changed focus between editor and list
+		if self.fileListView.hasFocus():
+			self.editor.setFocus()
+		else:
+			self.fileListView.setFocus()
+
+
 	def replaceText( self ):
 		cursor = self.replaceNextText( self.editor.textCursor() )
 		self.editor.setTextCursor( cursor )
 		self.nextSearchText()
+
 
 	def pinnedItem( self ):
 		index = self.fileListView.currentIndex()
@@ -395,6 +411,7 @@ class MainWidget( Ui_Form, QtWidgets.QWidget ):
 		if data.isFixed:
 			index.model().moveItem( index.row(), 0 )
 		self.fileListView.update()
+
 
 	def replaceNextText( self, cursor ):
 		oldWord = self.searchLineBoxInEditor.text()
@@ -405,9 +422,11 @@ class MainWidget( Ui_Form, QtWidgets.QWidget ):
 			cursor.endEditBlock()
 		return cursor
 
+
 	def searchWord( self, text ):
 		self.rule.pattern = re.compile( text )
 		self.updateEditor()
+
 
 	def updateEditor( self ):
 		cursor = self.editor.textCursor()
@@ -418,7 +437,10 @@ class MainWidget( Ui_Form, QtWidgets.QWidget ):
 		while block.isValid():
 			position = block.position() + len( block.text() )
 			block = block.next()
-		self.editor.document().contentsChange.emit( firstPosition, position, position )
+		self.editor.document().contentsChange.disconnect( self.contentChanged )
+		self.editor.document().contentsChange.emit( firstPosition, 0, position )
+		self.editor.document().contentsChange.connect( self.contentChanged )
+
 
 	def showSearch( self ):
 		self.searchWidgetInEditor.show()
@@ -426,28 +448,44 @@ class MainWidget( Ui_Form, QtWidgets.QWidget ):
 		self.searchLineBoxInEditor.setText( text )
 		self.searchLineBoxInEditor.setFocus()
 
+
 	def newFile( self ):
 		filename = self.generateFileName()
 		f = open( filename, "w+" )
 		now = datetime.datetime.now()
+		defaultName = 'New Note'
+		displayName, result = QtWidgets.QInputDialog.getText( self, 'Note Name', 'Enter a note name',
+															  text = defaultName )
+		if not result or not displayName:
+			return
+
 		index = self.currentFolder.fileListModel.insertData(
-			FileListItem( filename, 'New Note', lastUpdate = now.strftime( "%Y-%m-%d %H:%M" ) ), 0 )
+			FileListItem( filename, displayName, lastUpdate = now.strftime( "%Y-%m-%d %H:%M" ) ), 0 )
 		self.titleNameChanged()
 		f.close()
 		index = self.currentFolder.fileListModel.index( index )
 		if index.isValid():
 			self.loadFile( index )
 
+
 	def newFolder( self ):
 		folderName = self.generateFolderName()
 		os.makedirs( folderName )
-		newFolder = FolderListItem( folderName, 'New Folder', self.currentFolder )
+		defaultName = 'New Folder'
+		displayName, result = QtWidgets.QInputDialog.getText( self, 'Folder Name', 'Enter a folder name',
+															  text = defaultName )
+		if not result or not displayName:
+			return
+		newFolder = FolderListItem( folderName, displayName, self.currentFolder )
 		self.currentFolder.fileListModel.insertData( newFolder, 0 )
 		self.titleNameChanged()
 
+
 	def changePrevFolder( self ):
 		parent = self.currentFolder.parent
-		if parent:
+		if self.searchWidgetInEditor.isVisible():
+			self.hideSearchWidgetInEditor()
+		elif parent:
 			self.saveFile()
 			oldFolder = self.currentFolder
 			self.currentFolder.currentFilePath = None
@@ -461,14 +499,19 @@ class MainWidget( Ui_Form, QtWidgets.QWidget ):
 			if index.isValid():
 				parent.loadFile( editor = self.editor )
 				self.fileListView.setCurrentIndex( index )
-			self.pathTextLabel.setText( parent.path() )
+			self.pathTextLabel.setText( parent.title )
 			self.currentFolder.currentFilePath = None
 		else:
 			print 'Folder is root folder'
 			exit( 0 )
 
+
 	def changeNextFolder( self ):
 		data = self.currentFolder.fileListModel.getItem( self.fileListView.currentIndex().row() )
+		self.changeFolder( data )
+
+
+	def changeFolder( self, data ):
 		if isinstance( data, FolderListItem ):
 			self.saveFile()
 			self.searchLineBoxInFileList.setText( '' )
@@ -478,20 +521,22 @@ class MainWidget( Ui_Form, QtWidgets.QWidget ):
 			self.currentFolder.currentFilePath = None
 			data.currentFilePath = None
 			self.currentFolder = data
-			self.fileListView.setCurrentIndex( self.currentFolder.fileListModel.index( 0 ) )
 			self.currentFolder.fileListModel.dataUpdated.connect( self.titleNameChanged )
 			self.editor.clear()
-			self.pathTextLabel.setText( data.path() )
+			self.pathTextLabel.setText( data.title )
 			self.editor.document().blockSignals( False )
+
 
 	def searchFileNames( self, text ):
 		self.currentFolder.fileListModel.search( text )
 		self.fileListWidget.update()
 
+
 	def titleNameChanged( self ):
 		# fixme ilerde bunu o an degisen klasor icin yap su an herseyi tekrardan yapıyor
 		with open( fileListPath, 'w' ) as outfile:
 			json.dump( self.rootFolder.json(), outfile )
+
 
 	def setCurrentIndexOfListView( self ):
 		index = self.currentFolder.fileListModel.getIndex( self.currentFolder.currentFilePath )
@@ -500,19 +545,23 @@ class MainWidget( Ui_Form, QtWidgets.QWidget ):
 			if index.isValid():
 				self.fileListView.setCurrentIndex( index )
 
+
 	def saveItemsStyle( self ):
 		with open( 'editor.conf', 'w' ) as outfile:
 			dict = { }
 			dict['patterns'] = map( lambda item: item.json(), self.styleItems )
 			json.dump( dict, outfile )
 
+
 	def generateFileName( self ):
 		filename = self.currentFolder.generateFileName()
 		return filename
 
+
 	def generateFolderName( self ):
 		folder = self.currentFolder.generateFolderName()
 		return folder
+
 
 	def loadFile( self, index ):
 		if not index.isValid():
@@ -525,6 +574,7 @@ class MainWidget( Ui_Form, QtWidgets.QWidget ):
 		self.editor.document().contentsChange.connect( self.contentChanged )
 		self.currentFolder.currentFilePath = data.filename
 
+
 	def saveFile( self ):
 		if self.currentFolder.currentFilePath:
 			if os.path.isdir( self.currentFolder.currentFilePath ):
@@ -535,12 +585,16 @@ class MainWidget( Ui_Form, QtWidgets.QWidget ):
 			self.timer.stop()
 			self.editor.document().setModified( False )
 
+
 	def delete( self ):
+		index = self.fileListView.currentIndex()
+		if self.fileListView.model().flags( index ) & ItemFlags.ItemIsSoftLink:
+			return
 		result = QtWidgets.QMessageBox.warning( self, 'Are you sure?', 'Item will be deleted',
 												QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No )
 		if result == QtWidgets.QMessageBox.No:
 			return
-		index = self.fileListView.currentIndex()
+
 		if self.currentFolder.fileListModel.flags( index ) & ItemFlags.ItemIsDeletable:
 			data = self.currentFolder.fileListModel.getItem( index.row() )
 			self.currentFolder.fileListModel.deleteItem( data )
@@ -559,6 +613,7 @@ class MainWidget( Ui_Form, QtWidgets.QWidget ):
 				if index.isValid():
 					self.loadFile( index )
 
+
 	def contentChanged( self, pos, rem, add ):
 		index = self.currentFolder.fileListModel.getIndex( self.currentFolder.currentFilePath )
 		file_ = self.currentFolder.fileListModel.getItem( index )
@@ -574,20 +629,25 @@ class MainWidget( Ui_Form, QtWidgets.QWidget ):
 			self.titleNameChanged()
 		self.timer.start( 600 )
 
+
 	def reformatBlocks( self ):
 		print 'reformated'
 
+
 	def getFirstVisibleCursor( self ):
 		return self.editor.cursorForPosition( QtCore.QPoint( 0, 0 ) )
+
 
 	def hideSearchWidgetInEditor( self ):
 		self.searchWord( '' )
 		self.searchWidgetInEditor.hide()
 
+
 	def openPreferences( self ):
 		preferences = Preferences( self, preferences = self.styleItems )
 		preferences.acceptPreferences.connect( self.closePreferences )
 		preferences.open()
+
 
 	def closePreferences( self, patterns ):
 		self.styleItems = patterns

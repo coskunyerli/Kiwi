@@ -5,7 +5,7 @@ import os
 from PySide2 import QtCore, QtGui, QtWidgets
 
 from enums import ItemFlags, FileType
-from path import iconsPath
+from path import iconsPath, filePath
 
 
 class StyleItem( object ):
@@ -33,30 +33,37 @@ class StyleItem( object ):
 		else:
 			self._blockCharFormat.setBackground( QtGui.QBrush() )
 
+
 	def __str__( self ):
 		return '%s %s' % (self.name, self._blockCharFormat.foreground().color().name())
+
 
 	def __repr__( self ):
 		return self.__str__()
 
+
 	def json( self ):
 		background = self.charFormat.background().color().name() if self.charFormat.background().isOpaque() else None
-		return { 'name': self.name, 'pattern': self.pattern, 'family': self.charFormat.fontFamily(),
-				 'size': self.charFormat.fontPointSize(), 'bold': self.charFormat.fontWeight() == QtGui.QFont.Bold,
-				 'strikeout': self.charFormat.fontStrikeOut(), 'italic': self.charFormat.fontItalic(),
-				 'color': self.charFormat.foreground().color().name(),
-				 'next': self.enumarationClass if self.enumarationClass else None,
-				 'background': background }
+		return {'name': self.name, 'pattern': self.pattern, 'family': self.charFormat.fontFamily(),
+				'size': self.charFormat.fontPointSize(), 'bold': self.charFormat.fontWeight() == QtGui.QFont.Bold,
+				'strikeout': self.charFormat.fontStrikeOut(), 'italic': self.charFormat.fontItalic(),
+				'color': self.charFormat.foreground().color().name(),
+				'next': self.enumarationClass if self.enumarationClass else None,
+				'background': background}
+
 
 	@property
 	def charFormat( self ):
 		return self._blockCharFormat
 
+
 	def setCharFormat( self, format ):
 		self._blockCharFormat = format
 
+
 	def copy( self ):
 		return StyleItem.create( self.json() )
+
 
 	@staticmethod
 	def create( dictItem ):
@@ -69,13 +76,15 @@ class StyleItem( object ):
 
 
 class FileListItem( object ):
-	def __init__( self, filename, title, isFixed = False, lastUpdate = None, displayName = None ):
+	def __init__( self, filename, title, isFixed = False, lastUpdate = None, displayName = None, isLocked = None ):
 		self.isFixed = isFixed
 		self.filename = filename
 		self.title = title
 		self.displayName = displayName if displayName else title
 		self.type = FileType.FILE
 		self.lastUpdate = lastUpdate
+		self.isLocked = isLocked
+
 
 	def loadFile( self, **kwargs ):
 		editor = kwargs.get( 'editor' )
@@ -92,20 +101,25 @@ class FileListItem( object ):
 
 		file.close()
 
+
 	def __str__( self ):
 		return '%s_%s' % (self.type, self.title)
+
 
 	def __repr__( self ):
 		return self.__str__()
 
+
 	def json( self ):
-		return { 'filename': self.filename, 'title': self.title, 'type': self.type, 'lastUpdate': self.lastUpdate,
-				 'isFixed': self.isFixed }
+		return {'filename': self.filename, 'title': self.title, 'type': self.type, 'lastUpdate': self.lastUpdate,
+				'isFixed': self.isFixed}
+
 
 	@classmethod
 	def create( cls, dict ):
 		return FileListItem( dict['filename'], dict['title'], lastUpdate = dict.get( 'lastUpdate' ),
 							 isFixed = dict.get( 'isFixed' ) )
+
 
 	def setFixed( self, result ):
 		self.isFixed = result
@@ -120,19 +134,25 @@ class FolderListItem( FileListItem ):
 		self.currentFilePath = None
 		self.setParent( parent, first = True )
 
+
 	def fileCount( self ):
 		if '..' in self.fileListModel:
 			return self.fileListModel.rowCount() - 1
 		else:
 			return self.fileListModel.rowCount()
 
+
 	def path( self ):
-		return self.title
+		if self.parent is None:
+			return ''
+		return os.path.join( self.parent.path(), os.path.basename( self.filename ) )
+
 
 	def __eq__( self, other ):
 		if other is not None:
 			return self.filename == other.filename
 		return False
+
 
 	def setParent( self, parent, first = False ):
 		if parent:
@@ -144,12 +164,14 @@ class FolderListItem( FileListItem ):
 			self.fileListModel.insertData( item, index = 0 )
 			self.parent = parent
 
+
 	def generateFileName( self ):
 		while True:
 			filename = self.fileListModel.generateFileName()
 			if not os.path.exists( filename ):
 				break
 		return os.path.join( self.filename, filename )
+
 
 	def generateFolderName( self ):
 		while True:
@@ -158,11 +180,13 @@ class FolderListItem( FileListItem ):
 				break
 		return os.path.join( self.filename, folder )
 
+
 	def json( self ):
 		json = super( FolderListItem, self ).json()
 		json['files'] = self.fileListModel.json()
 		json['parent'] = self.parent.filename if self.parent else None
 		return json
+
 
 	def loadFile( self, **kwargs ):
 		editor = kwargs.get( 'editor' )
@@ -171,19 +195,24 @@ class FolderListItem( FileListItem ):
 		editor.document().blockSignals( False )
 		editor.setEnabled( False )
 
+
 	def copy( self ):
 		item = FolderListItem( self.filename, self.title, self.parent )
 		item.fileListModel = self.fileListModel
 		return item
 
+
 	def __str__( self ):
 		return '[%s_%s => %s]' % (self.type, self.title, self.fileListModel)
+
 
 	def __repr__( self ):
 		return self.__str__()
 
+
 	def isEmpty( self ):
 		return self.fileListModel.isEmpty()
+
 
 	@classmethod
 	def create( cls, dict ):
@@ -192,6 +221,7 @@ class FolderListItem( FileListItem ):
 
 class FileListModel( QtCore.QAbstractListModel ):
 	_updateDataSignal = QtCore.Signal( FileListItem, FileListItem, int )
+
 
 	def __init__( self, fileList, parent ):
 		super( FileListModel, self ).__init__()
@@ -203,18 +233,22 @@ class FileListModel( QtCore.QAbstractListModel ):
 		self.searchTitle = ''
 		self._parent = parent
 
+
 	def __str__( self ):
 		fileList = filter( lambda item: item.title != '..', self.allFileList )
 		return str( fileList )
 
+
 	def __iter__( self ):
 		return iter( self.fileList )
+
 
 	def __contains__( self, item ):
 		for data in self.fileList:
 			if data.displayName == item:
 				return True
 		return False
+
 
 	def flags( self, index ):
 		data = self.fileList[index.row()]
@@ -243,16 +277,19 @@ class FileListModel( QtCore.QAbstractListModel ):
 					ItemFlags.ItemIsDeletable
 			)
 
+
 	def index( self, row, col = 0, parent = QtCore.QModelIndex() ):
 		if row >= self.rowCount():
 			return QtCore.QModelIndex()
 		data = self.fileList[row]
 		return self.createIndex( row, col, data )
 
+
 	def mimeData( self, indices ):
 		mimeDat = super( FileListModel, self ).mimeData( indices )
 		mimeDat.setText( ''.join( map( lambda index: str( index.row() ), indices ) ) )
 		return mimeDat
+
 
 	def dropMimeData( self, data, action, row, column, parent ):
 		# fixme parent folderda bir sorun var ona bak bi parentta sorun var set parent yaparken
@@ -278,6 +315,7 @@ class FileListModel( QtCore.QAbstractListModel ):
 			return True
 		return False
 
+
 	def data( self, index, role = QtCore.Qt.DisplayRole ):
 		if not index.isValid():
 			return None
@@ -294,6 +332,7 @@ class FileListModel( QtCore.QAbstractListModel ):
 				return QtGui.QIcon( os.path.join( iconsPath, 'folder.png' ) )
 			else:
 				return QtGui.QIcon( os.path.join( iconsPath, 'text_file.png' ) )
+
 
 	def setData( self, index, item, role = QtCore.Qt.EditRole ):
 		if index.row() >= self.rowCount() or index.row() < 0 or item is None:
@@ -314,19 +353,24 @@ class FileListModel( QtCore.QAbstractListModel ):
 			return True
 		return False
 
+
 	def setClickFunction( self, function ):
 		self.clickFunction = function
+
 
 	def isEmpty( self ):
 		return len( self.allFileList ) <= 0
 
+
 	def hasClickFunction( self ):
 		return False if self.clickFunction is None else True
+
 
 	def deleteRow( self, filename ):
 		index = self.getIndex( filename )
 		data = self.getItem( index )
 		return self.deleteItem( data )
+
 
 	def deleteItem( self, data ):
 		index = self.getList().index( data )
@@ -338,8 +382,10 @@ class FileListModel( QtCore.QAbstractListModel ):
 			return data
 		return None
 
+
 	def rowCount( self, parent = QtCore.QModelIndex() ):
 		return len( self.fileList )
+
 
 	def insertData( self, data, index = None ):
 		if data is None:
@@ -354,14 +400,17 @@ class FileListModel( QtCore.QAbstractListModel ):
 		self.endInsertRows()
 		return index
 
+
 	def deleteData( self, filename ):
 		if filename:
 			return self.deleteRow( filename )
 		else:
 			return None
 
+
 	def getList( self ):
 		return self.fileList
+
 
 	def search( self, title ):
 		self.searchTitle = title
@@ -369,11 +418,13 @@ class FileListModel( QtCore.QAbstractListModel ):
 		self.fileList = filter( lambda item: title.lower() in item.title.lower(), self.allFileList )
 		self.endResetModel()
 
+
 	def setFileList( self, fileList ):
 		self.beginResetModel()
 		self.allFileList = fileList
 		self.fileList = copy.copy( self.allFileList )
 		self.endResetModel()
+
 
 	def getItem( self, index ):
 		try:
@@ -381,12 +432,14 @@ class FileListModel( QtCore.QAbstractListModel ):
 		except:
 			return None
 
+
 	def getIndex( self, filename ):
 		for i in range( len( self.fileList ) ):
 			item = self.fileList[i]
 			if item.filename == filename:
 				return i
 		return -1
+
 
 	def moveItem( self, fromItem, to ):
 		if fromItem == to:
@@ -401,6 +454,7 @@ class FileListModel( QtCore.QAbstractListModel ):
 			self.allFileList.insert( to, item )
 
 			self.endMoveRows()
+
 
 	def _checkFile( self, from_, to ):
 		"""
@@ -420,28 +474,34 @@ class FileListModel( QtCore.QAbstractListModel ):
 				return to
 		return to
 
+
 	def stringList( self ):
 		return map( lambda m: m.title, self.fileList )
+
 
 	def clear( self ):
 		self.beginResetModel()
 		self.fileList = []
 		self.endResetModel()
 
+
 	@property
 	def dataUpdated( self ):
 		return self._updateDataSignal
+
 
 	def json( self ):
 		fileList = filter( lambda item: item.displayName != '..', self.allFileList )
 		json = map( lambda data: data.json(), fileList )
 		return json
 
+
 	def generateFileName( self ):
 		# allTextFilesNumber = len( filter( lambda item: item.type == FileType.FILE, self.allFileList ) )
 		filename = 'file%s.txt' % ''.join(
 			random.choice( string.ascii_letters + string.digits ) for _ in range( 21 ) )
 		return filename
+
 
 	def generateFolderName( self ):
 		# allFolderNumber = len( filter( lambda item: item.type == FileType.FOLDER, self.allFileList ) )
@@ -452,8 +512,10 @@ class FileListModel( QtCore.QAbstractListModel ):
 class ButtonWithRightClick( QtWidgets.QToolButton ):
 	rightClicked = QtCore.Signal()
 
+
 	def __init__( self, parent = None ):
 		super( ButtonWithRightClick, self ).__init__( parent )
+
 
 	def mousePressEvent( self, event ):
 		if event.button() == QtCore.Qt.RightButton:

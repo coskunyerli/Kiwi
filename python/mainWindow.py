@@ -8,6 +8,7 @@ from enums import FileType
 from path import editorPath, fileListPath, stylePath, filePath, filesPath
 
 
+
 class MainWindow( QtWidgets.QMainWindow ):
 	def __init__( self, parent = None ):
 		super( MainWindow, self ).__init__( parent )
@@ -25,14 +26,17 @@ class MainWindow( QtWidgets.QMainWindow ):
 		root = self.readFileList()
 		self.mainWidget = MainWidget( self.confFileList, root, self )
 		self.editor = self.mainWidget.editor
+		self.setting = QtCore.QSettings( QtCore.QSettings.NativeFormat, QtCore.QSettings.UserScope, "TodoList", "todo" )
 		self.setupEditor()
 		self.setupFileMenu()
 		self.setupHelpMenu()
 		self.setCentralWidget( self.mainWidget )
 		self.setWindowTitle( 'TodoList' )
+		self.readSetting()
 		self.initSignalsAndSlots()
 		self.initialize()
 		self.visible = False
+
 
 	def readConfFile( self ):
 		confFile = open( editorPath, 'r' )
@@ -42,6 +46,7 @@ class MainWindow( QtWidgets.QMainWindow ):
 			confFile.close()
 			return None
 		return config
+
 
 	def readFileList( self ):
 		try:
@@ -58,6 +63,7 @@ class MainWindow( QtWidgets.QMainWindow ):
 			print 'Process Error', str( e )
 			return None
 
+
 	def _readFileList( self, folder, json ):
 		for file in json:
 			if file['type'] == FileType.FILE:
@@ -69,11 +75,14 @@ class MainWindow( QtWidgets.QMainWindow ):
 				folder.fileListModel.insertData( subFolder )
 				self._readFileList( subFolder, file['files'] )
 
+
 	def initSignalsAndSlots( self ):
 		self.editor.document().modificationChanged.connect( self.updateMainWindowTitle )
 
+
 	def initialize( self ):
 		pass
+
 
 	def setupEditor( self ):
 		font = QtGui.QFont()
@@ -83,20 +92,23 @@ class MainWindow( QtWidgets.QMainWindow ):
 		self.editor.setFont( font )
 		self.setStyleSheet( open( stylePath, 'r' ).read() )
 
+
 	def setupFileMenu( self ):
 		fileMenu = QtWidgets.QMenu( 'File', self )
 		self.menuBar().addMenu( fileMenu )
 		action = QtWidgets.QAction( self )
 		action.triggered.connect( self.mainWidget.newFile )
 		action.setShortcut( QtGui.QKeySequence.New )
-		action.setText( "New" )
-		fileMenu.addAction( action )
+		action.setText( "New File" )
 
-		# action = QtWidgets.QAction( self )
-		# action.triggered.connect( self.test )
-		# action.setShortcut( QtCore.Qt.CTRL + QtCore.Qt.Key_G )
-		# action.setText( "Save" )
-		# fileMenu.addAction( action )
+		actionFolder = QtWidgets.QAction( self )
+		actionFolder.triggered.connect( self.mainWidget.newFolder )
+		actionFolder.setShortcut( QtGui.QKeySequence( 'Ctrl+M' ) )
+		actionFolder.setText( "New Folder" )
+
+		fileMenu.addAction( action )
+		fileMenu.addAction( actionFolder )
+
 		action = QtWidgets.QAction( self )
 		action.triggered.connect( self.mainWidget.showSearch )
 		action.setShortcut( QtCore.Qt.CTRL + QtCore.Qt.Key_F )
@@ -109,14 +121,12 @@ class MainWindow( QtWidgets.QMainWindow ):
 		action.setText( "Preferences" )
 		fileMenu.addAction( action )
 
-	# def test( self ):
-	# 	block = self.editor.document().begin().next().next().next()
-	# 	self.editor.document().documentLayout().setBlockVisible( block, self.visible )
-	# 	self.visible = not self.visible
 
 	def closeEvent( self, event ):
 		self.mainWidget.titleNameChanged()
+		self.saveSetting()
 		super( MainWindow, self ).closeEvent( event )
+
 
 	def setupHelpMenu( self ):
 		helpMenu = QtWidgets.QMenu( "&Help", self )
@@ -127,6 +137,7 @@ class MainWindow( QtWidgets.QMainWindow ):
 		action.setText( "About" )
 		helpMenu.addAction( action )
 
+
 	@QtCore.Slot()
 	def about( self ):
 		QtWidgets.QMessageBox.about( self, "About TodoList application",
@@ -134,6 +145,30 @@ class MainWindow( QtWidgets.QMainWindow ):
 										 to perform simple syntax highlighting by subclassing 
 										 the QSyntaxHighlighter class and describing 
 										 highlighting rules using regular expressions.</p>""" )
+
+
+	def readSetting( self ):
+		path = self.setting.value( 'currentPath', '' )
+		list_ = path.split( '/' )
+		filename = filesPath
+		for folder in list_:
+			filename = os.path.join( filename, folder )
+			index = self.mainWidget.currentFolder.fileListModel.getIndex( filename )
+			if index == -1:
+				continue
+			folder = self.mainWidget.currentFolder.fileListModel.getItem( index )
+			if isinstance( folder, FolderListItem ):
+				self.mainWidget.changeFolder( folder )
+			else:
+				self.mainWidget.loadFile( self.mainWidget.currentFolder.fileListModel.index( index ) )
+
+
+	def saveSetting( self ):
+		folder = self.mainWidget.currentFolder
+		path = os.path.join( folder.path(),
+							 os.path.basename( folder.currentFilePath ) if folder.currentFilePath is not None else '' )
+		self.setting.setValue( 'currentPath', path)
+
 
 	def updateMainWindowTitle( self, change ):
 		if change and self.windowTitle().find( '*' ) == -1:
