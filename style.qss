@@ -20,7 +20,7 @@ QLineEdit:selected {
 
 QLineEdit{
 background-color: rgb(97, 98, 99);
-border-radius:3px;
+border-radius:4px;
 color:rgb(225,225,225);
 }
 
