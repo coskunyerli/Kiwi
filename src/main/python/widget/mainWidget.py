@@ -52,15 +52,11 @@ class Ui_Form(object):
 		self.horizontalLayout_2.setContentsMargins(0, 0, 0, 0)
 		self.horizontalLayout_2.setObjectName("horizontalLayout_2")
 		self.horizontalLayout_2.setSpacing(0)
-		# spacer = QtWidgets.QSpacerItem( 0, 0, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum )
-		# self.horizontalLayout_2.addItem(spacer)
 
 		self.searchLineBoxInFileList = QtWidgets.QLineEdit(self.searchWidgetInFileList)
 		self.searchLineBoxInFileList.setObjectName("searchLineBoxInFileList")
 		self.verticalLayout_4.addLayout(self.horizontalLayout_2)
 
-		# colorCombobox = ColorComboBox(self.searchWidgetInFileList)
-		# self.verticalLayout_4.addWidget(colorCombobox)
 		self.pathTextLabel = QtWidgets.QLabel(self.searchWidgetInFileList)
 		self.pathTextLabel.setIndent(6)
 		self.pathTextLabel.setText('/')
@@ -101,16 +97,6 @@ class Ui_Form(object):
 		self.verticalLayout_2.addWidget(self.fileListView)
 		self.horizontalLayout_3.addWidget(self.fileListWidget)
 
-		# self.tabFrame = QtWidgets.QFrame( Form )
-		# self.tabFrame.setStyleSheet( 'background-color:rgb(42,42,42)' )
-		# self.tabFrameLayout = QtWidgets.QVBoxLayout( self.tabFrame )
-		# self.tabFrameLayout.setContentsMargins( 0, 8, 0, 0 )
-		#
-		# #self.tabWidget = QtWidgets.QTabWidget( self.tabFrame )
-		# #self.tabFrameLayout.addWidget( self.tabWidget )
-		#
-		# #self.tabWidget.setObjectName( "tabWidget" )
-		# #self.tabWidget.setTabShape( QtWidgets.QTabWidget.Rounded )
 
 		self.editorWidget = QtWidgets.QWidget(Form)
 		sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)

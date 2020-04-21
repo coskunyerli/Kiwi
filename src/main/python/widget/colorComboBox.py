@@ -20,7 +20,7 @@ class ColorComboBox(QtWidgets.QComboBox):
 
 
 	def getColors(self):
-		return map(lambda c: QtGui.QColor(c), self.colors)
+		return list(map(lambda c: QtGui.QColor(c), self.colors))
 
 
 	def setCurrentIndex(self, index):

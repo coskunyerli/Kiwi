@@ -349,7 +349,7 @@ class FileListModel(QtCore.QAbstractListModel):
 	def search(self, title):
 		self.searchTitle = title
 		self.beginResetModel()
-		self.fileList = filter(lambda item: title.lower() in item.title.lower(), self.allFileList)
+		self.fileList = list(filter(lambda item: title.lower() in item.title.lower(), self.allFileList))
 		self.endResetModel()
 
 
@@ -410,7 +410,7 @@ class FileListModel(QtCore.QAbstractListModel):
 
 
 	def stringList(self):
-		return map(lambda m: m.title, self.fileList)
+		return list(map(lambda m: m.title, self.fileList))
 
 
 	def clear(self):
