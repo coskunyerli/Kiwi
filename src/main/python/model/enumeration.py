@@ -1,4 +1,4 @@
-from python.static import increment_str
+from static import increment_str
 
 
 class BaseEnumeration(object):
@@ -51,8 +51,8 @@ class NumberEnumeration(BaseEnumeration):
 	def inc(self, text):
 		try:
 			return str(int(text) + 1)
-		except ValueError, e:
-			print str(e)
+		except ValueError as e:
+			print(str(e))
 			return str(-1)
 
 
@@ -95,8 +95,8 @@ class AlphabetEnumeration(BaseEnumeration):
 	def inc(self, text):
 		try:
 			return increment_str(text)
-		except ValueError, e:
-			print str(e)
+		except ValueError as e:
+			print(str(e))
 			return ''
 
 
@@ -149,6 +149,6 @@ class TodoEnumeration(BaseEnumeration):
 		return '%s '
 
 
-if __name__ == '__main__':
-	print NumberEnumeration2.create().next('(1) Ahmet bir salaktir')
-	print globals().get('AlphabetEnumeration4').__name__
+# if __name__ == '__main__':
+# 	print NumberEnumeration2.create().next('(1) Ahmet bir salaktir')
+# 	print globals().get('AlphabetEnumeration4').__name__

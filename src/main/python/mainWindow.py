@@ -1,11 +1,13 @@
 import json
 import os
 
+import core
 from PySide2 import QtCore, QtGui, QtWidgets
-from python.widget.mainWidget import MainWidget
-from python.itemmodel.fileListModel import FileListItem, FolderListItem
+
 from enums import FileType
-from path import editorPath, fileListPath, stylePath, filePath, filesPath
+from widget.mainWidget import MainWidget
+from itemmodel.fileListModel import FileListItem, FolderListItem
+from path import fileListPath, filePath, filesPath
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -38,7 +40,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
 	def readConfFile(self):
-		confFile = open(editorPath, 'r')
+		confFile = open(core.fbs.conf, 'r')
 		try:
 			config = json.load(confFile)
 		except:
@@ -52,14 +54,14 @@ class MainWindow(QtWidgets.QMainWindow):
 			try:
 				fileListFile = open(fileListPath, 'r')
 				fileList = json.loads(fileListFile.read())
-			except Exception, e:
-				print 'Json Loading Error', str(e)
+			except Exception as e:
+				print('Json Loading Error', str(e))
 				fileList = {'filename': filesPath, 'title': '/', 'files': []}
 			rootFolder = FolderListItem(fileList['filename'], fileList['title'], None)
 			self._readFileList(rootFolder, fileList['files'])
 			return rootFolder
-		except Exception, e:
-			print 'Process Error', str(e)
+		except Exception as e:
+			print('Process Error', str(e))
 			return None
 
 
@@ -89,7 +91,6 @@ class MainWindow(QtWidgets.QMainWindow):
 		font.setFixedPitch(True)
 		font.setPointSize(12)
 		self.editor.setFont(font)
-		self.setStyleSheet(open(stylePath, 'r').read())
 
 
 	def setupFileMenu(self):

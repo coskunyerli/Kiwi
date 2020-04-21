@@ -1,9 +1,9 @@
 import os
 
+import core
 from PySide2 import QtWidgets, QtCore, QtGui
 
-from python.enums import FileType, ItemFlags
-from python.path import iconsPath
+from enums import FileType, ItemFlags
 
 
 class FileViewDelegate(QtWidgets.QStyledItemDelegate):
@@ -64,7 +64,7 @@ class FileViewDelegate(QtWidgets.QStyledItemDelegate):
 
 		if not index.model().flags(index) & ItemFlags.ItemIsSoftLink:
 			if data.isFixed:
-				pinPixmap = QtGui.QPixmap(os.path.join(iconsPath, 'pin.png'))
+				pinPixmap = QtGui.QPixmap(core.fbs.icons('pin.png'))
 
 				pinPixmapSize = pinPixmap.size() / 3.5
 				pinRect = QtCore.QRect(
@@ -73,9 +73,9 @@ class FileViewDelegate(QtWidgets.QStyledItemDelegate):
 				painter.drawPixmap(pinRect, pinPixmap, pinPixmap.rect())
 			if data.isLocked is not None:
 				if data.isLocked:
-					lockPixmap = QtGui.QPixmap(os.path.join(iconsPath, 'lock.png'))
+					lockPixmap = QtGui.QPixmap(core.fbs.icons('lock.png'))
 				else:
-					lockPixmap = QtGui.QPixmap(os.path.join(iconsPath, 'lock-open.png'))
+					lockPixmap = QtGui.QPixmap(core.fbs.icons('lock-open.png'))
 				lockPixmapSize = lockPixmap.size() / 4.5
 				lockRect = QtCore.QRect(
 						rect.topLeft() + QtCore.QPoint(4, 4),

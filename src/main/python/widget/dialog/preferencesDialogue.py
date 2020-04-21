@@ -10,9 +10,7 @@ import os
 import re
 
 from PySide2 import QtGui, QtCore, QtWidgets
-
-from python.widget.buttonWithRightClick import ButtonWithRightClick
-from python.path import iconsPath
+from widget.buttonWithRightClick import ButtonWithRightClick
 
 
 class Ui_Form(object):
@@ -283,7 +281,7 @@ class Preferences(Ui_Form, QtWidgets.QDialog):
 	def setBackgroundNone(self):
 		self.currentFont.charFormat.setBackground(QtGui.QBrush())
 		icon = QtGui.QIcon()
-		icon.addPixmap(QtGui.QPixmap(os.path.join(iconsPath, 'transparent.png')))
+		icon.addPixmap(QtGui.QPixmap(core.fbs.icons('transparent.png')))
 		self.backColorButton.setStyleSheet("QPushButton{text-align:left}")
 		self.backColorButton.setIconSize(QtCore.QSize(30, 30))
 		self.backColorButton.setIcon(icon)

@@ -1,0 +1,38 @@
+QPlainTextEdit,QTextEdit {
+    background-color: rgb(42, 42, 42);
+    color: rgb(169, 183, 198)
+}
+
+QListView {
+    background-color: rgb(31, 32, 35);
+}
+
+QMainWindow {
+    background-color: rgb(45, 46, 48);
+}
+QLineEdit,QComboBox{
+color:#141414;
+}
+
+QLineEdit:selected {
+    border: none;
+}
+
+QLineEdit{
+background-color: rgb(97, 98, 99);
+border-radius:4px;
+color:rgb(225,225,225);
+}
+
+
+QDialog {
+    background-color: rgb(60, 63, 65);
+}
+
+QDialog QLabel, QCheckBox {
+    color: white;
+}
+
+QDialog #previewDisplay {
+    background-color: rgb(43, 43, 43);
+}

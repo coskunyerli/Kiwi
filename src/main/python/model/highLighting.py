@@ -1,9 +1,9 @@
 import re
-import python.model.Enumeration
+import model.enumeration
 
 from PySide2 import QtGui
 
-from python.static import get_classes
+from static import get_classes
 
 
 class Highlighter(QtGui.QSyntaxHighlighter):
@@ -12,7 +12,7 @@ class Highlighter(QtGui.QSyntaxHighlighter):
 		self.editor = editor
 		self.updateHighlighterRules(patterns)
 		self.editor.document().blockCountChanged.connect(self.setEnumaration)
-		self.enumClasses = get_classes(python.model.Enumeration.__name__)
+		self.enumClasses = get_classes(model.enumeration.__name__)
 
 
 	def highlightBlock(self, text):

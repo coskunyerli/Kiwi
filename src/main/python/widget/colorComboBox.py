@@ -1,6 +1,6 @@
 from PySide2 import QtWidgets, QtGui, QtCore
 
-from python.delegate.comboboxItemDelegate import ComboBoxItemDelegate
+from delegate.comboboxItemDelegate import ComboBoxItemDelegate
 
 
 class ColorComboBox(QtWidgets.QComboBox):

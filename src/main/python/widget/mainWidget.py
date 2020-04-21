@@ -11,15 +11,17 @@ import shutil
 import re
 import json
 import datetime
+
+import core
 from PySide2 import QtCore, QtGui, QtWidgets
-from python.model.HighLighting import HighlightingRule, Highlighter
-from python.itemmodel.fileListModel import FileListItem, FolderListItem
-from python.model.styleItem import StyleItem
-from python.enums import FileType, ItemFlags
-from python.path import fileListPath, iconsPath
-from python.widget.dialog.preferencesDialogue import Preferences
-from python.widget.textEdit import TextEdit
-from python.widget.listView import ListView
+from model.highLighting import HighlightingRule, Highlighter
+from itemmodel.fileListModel import FileListItem, FolderListItem
+from model.styleItem import StyleItem
+from enums import FileType, ItemFlags
+from path import fileListPath
+from widget.dialog.preferencesDialogue import Preferences
+from widget.textEdit import TextEdit
+from widget.listView import ListView
 
 
 class Ui_Form(object):
@@ -77,14 +79,14 @@ class Ui_Form(object):
 		self.newFileButton = QtWidgets.QPushButton(self.addFileWidget)
 		self.newFileButton.setObjectName("newFileButton")
 		icon = QtGui.QIcon()
-		icon.addPixmap(QtGui.QPixmap(os.path.join(iconsPath, 'baseline_insert_drive_file_white_48dp.png')))
+		icon.addPixmap(QtGui.QPixmap(core.fbs.icons('baseline_insert_drive_file_white_48dp.png')))
 		self.newFileButton.setIcon(icon)
 		# self.newFileButton.setIconSize( QtCore.QSize( 18, 18 ) )
 		self.horizontalLayout_6.addWidget(self.newFileButton)
 		self.newFolderButton = QtWidgets.QPushButton(self.addFileWidget)
 		self.newFolderButton.setEnabled(True)
 		icon = QtGui.QIcon()
-		icon.addPixmap(QtGui.QPixmap(os.path.join(iconsPath, 'baseline_create_new_folder_white_48dp.png')))
+		icon.addPixmap(QtGui.QPixmap(core.fbs.icons('baseline_create_new_folder_white_48dp.png')))
 		self.newFolderButton.setIcon(icon)
 		# self.newFolderButton.setIconSize( QtCore.QSize( 18, 18 ) )
 		sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
@@ -502,7 +504,7 @@ class MainWidget(Ui_Form, QtWidgets.QWidget):
 			self.pathTextLabel.setText(parent.title)
 			self.currentFolder.currentFilePath = None
 		else:
-			print 'Folder is root folder'
+			print('Folder is root folder')
 			exit(0)
 
 
@@ -535,7 +537,8 @@ class MainWidget(Ui_Form, QtWidgets.QWidget):
 	def titleNameChanged(self):
 		# fixme ilerde bunu o an degisen klasor icin yap su an herseyi tekrardan yapıyor
 		with open(fileListPath, 'w') as outfile:
-			json.dump(self.rootFolder.json(), outfile)
+			jsonInString = json.dumps(self.rootFolder.json())
+			outfile.write(jsonInString)
 
 
 	def setCurrentIndexOfListView(self):
@@ -569,7 +572,7 @@ class MainWidget(Ui_Form, QtWidgets.QWidget):
 		data = self.currentFolder.fileListModel.getItem(index.row())
 		self.saveFile()
 		self.fileListView.setCurrentIndex(index)
-		self.editor.document().contentsChange.disconnect(self.contentChanged)
+		# self.editor.document().contentsChange.disconnect(self.contentChanged)
 		data.loadFile(editor = self.editor)
 		self.editor.document().contentsChange.connect(self.contentChanged)
 		self.currentFolder.currentFilePath = data.filename
@@ -605,7 +608,7 @@ class MainWidget(Ui_Form, QtWidgets.QWidget):
 					elif data.type == FileType.FOLDER:
 						shutil.rmtree(data.filename)
 				except OSError as e:
-					print "Failed with:", e.strerror
+					print("Failed with:", e.strerror)
 
 				self.titleNameChanged()
 				self.currentFolder.currentFilePath = None
@@ -631,7 +634,7 @@ class MainWidget(Ui_Form, QtWidgets.QWidget):
 
 
 	def reformatBlocks(self):
-		print 'reformated'
+		print('reformated')
 
 
 	def getFirstVisibleCursor(self):

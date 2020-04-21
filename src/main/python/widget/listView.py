@@ -1,7 +1,7 @@
 from PySide2 import QtWidgets, QtCore
 
-from python.delegate.fileViewDelegate import FileViewDelegate
-from python.enums import ItemFlags
+from delegate.fileViewDelegate import FileViewDelegate
+from enums import ItemFlags
 
 
 class ListView(QtWidgets.QListView):

@@ -2,10 +2,8 @@
 # --coding: utf-8 --
 import sys
 from PySide2 import QtWidgets
-from python.mainWindow import MainWindow
+from mainWindow import MainWindow
 
-reload( sys )
-sys.setdefaultencoding( 'utf8' )
 if __name__ == "__main__":
     # setup app
 

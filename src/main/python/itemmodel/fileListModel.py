@@ -3,10 +3,10 @@ import os
 import random
 import string
 
+import core
 from PySide2 import QtCore, QtGui
 
-from python.enums import ItemFlags, FileType
-from python.path import iconsPath
+from enums import ItemFlags, FileType
 
 
 class FileListItem(object):
@@ -25,7 +25,7 @@ class FileListItem(object):
 		editor.setEnabled(True)
 		file = open(self.filename, 'r')
 
-		text = file.read().decode('utf-8')
+		text = file.read()
 		if text == '':
 			editor.document().blockSignals(True)
 			editor.clear()
@@ -227,7 +227,7 @@ class FileListModel(QtCore.QAbstractListModel):
 
 	def dropMimeData(self, data, action, row, column, parent):
 		# fixme parent folderda bir sorun var ona bak bi parentta sorun var set parent yaparken
-		dropObject = map(lambda value: int(value), data.text().split(','))
+		dropObject = list(map(lambda value: int(value), data.text().split(',')))
 		if len(dropObject) > 0:
 			folder = self.fileList[parent.row()]
 			data = self.fileList[dropObject[0]]
@@ -263,9 +263,9 @@ class FileListModel(QtCore.QAbstractListModel):
 		elif role == QtCore.Qt.DecorationRole:
 			data = self.fileList[index.row()]
 			if isinstance(data, FolderListItem):
-				return QtGui.QIcon(os.path.join(iconsPath, 'folder.png'))
+				return QtGui.QIcon(core.fbs.icons('folder.png'))
 			else:
-				return QtGui.QIcon(os.path.join(iconsPath, 'text_file.png'))
+				return QtGui.QIcon(core.fbs.icons('text_file.png'))
 
 
 	def setData(self, index, item, role = QtCore.Qt.EditRole):
@@ -275,7 +275,7 @@ class FileListModel(QtCore.QAbstractListModel):
 			row = index.row()
 			oldModelItem = self.fileList[row]
 			newModelItem = item
-			if isinstance(newModelItem, unicode):
+			if isinstance(newModelItem, str):
 				if newModelItem.strip() == '' or newModelItem == oldModelItem.title:
 					return False
 				oldModelItem.title = newModelItem
@@ -426,7 +426,7 @@ class FileListModel(QtCore.QAbstractListModel):
 
 	def json(self):
 		fileList = filter(lambda item: item.displayName != '..', self.allFileList)
-		json = map(lambda data: data.json(), fileList)
+		json = list(map(lambda data: data.json(), fileList))
 		return json
 
 
