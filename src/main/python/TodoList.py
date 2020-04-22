@@ -4,7 +4,7 @@ import sys
 import core
 import logging as log
 
-from mainWindow import MainWindow
+from widget.mainWindow import MainWindow
 from model.fbs import TodoListApplicationContext
 
 if __name__ == "__main__":

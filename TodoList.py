@@ -2,7 +2,7 @@
 # --coding: utf-8 --
 import sys
 from PySide2 import QtWidgets
-from mainWindow import MainWindow
+from widget.mainWindow import MainWindow
 
 if __name__ == "__main__":
     # setup app

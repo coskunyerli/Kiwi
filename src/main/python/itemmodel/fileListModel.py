@@ -78,7 +78,7 @@ class FolderListItem(FileListItem):
 
 	def path(self):
 		if self.parent is None:
-			return ''
+			return '/'
 		return os.path.join(self.parent.path(), os.path.basename(self.filename))
 
 

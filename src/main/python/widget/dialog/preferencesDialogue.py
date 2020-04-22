@@ -195,15 +195,15 @@ class Preferences(Ui_Form, QtWidgets.QDialog):
 	def __init__(self, parent = None, **kwargs):
 		super(Preferences, self).__init__(parent)
 		self.confFileList = kwargs.get('preferences')
-		self.fontArray = map(lambda item: item.copy(), self.confFileList)
+		self.fontArray = list(map(lambda item: item.copy(), self.confFileList))
 		self.default = []
 
 		self.currentFont = None
 		self.colorDialog = QtWidgets.QColorDialog(self)
 		self.setupUi(self)
 
-		self.modeCombobox.addItems(map(lambda item: item.name, self.fontArray))
-		self.fontSizeCombo.addItems(map(lambda x: str(x), QtGui.QFontDatabase().standardSizes()))
+		self.modeCombobox.addItems(list(map(lambda item: item.name, self.fontArray)))
+		self.fontSizeCombo.addItems(list(map(lambda x: str(x), QtGui.QFontDatabase().standardSizes())))
 
 		self.previewDisplay.setAlignment(QtCore.Qt.AlignLeft)
 		self.initSignalandSlots()
