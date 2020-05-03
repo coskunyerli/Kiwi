@@ -7,3 +7,13 @@ class ItemFlags:
 class FileType:
 	FOLDER = 0
 	FILE = 1
+	SOFTLINK = 2
+
+
+class DataType:
+	DATA = 0
+	FILEDATA = 1
+	IMAGEFILEDATA = 2
+	STYLEDATA = 3
+	PDFFILEDATA = 4
+	TEXTFILEDATA = 5

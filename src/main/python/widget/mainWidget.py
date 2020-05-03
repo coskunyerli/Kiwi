@@ -6,21 +6,29 @@
 #      by: pyside-uic 0.2.15 running on PySide 1.2.2
 #
 # WARNING! All changes made in this file will be lost!
-import os
-import shutil
-import re
-import json
 import datetime
+import logging as log
+import os
 
 import core
 from PySide2 import QtCore, QtGui, QtWidgets
-from model.highLighting import HighlightingRule, Highlighter
-from itemmodel.fileListModel import FileListItem, FolderListItem
-from model.styleItem import StyleItem
+from delegate.dataViewDelegate import DataViewDelegate
+from delegate.fileViewDelegate import FileViewDelegate
+from exceptions.invalidListModelItemException import InvalidListModelItemException
+from factory.dataDialogFactory import DataDialogFactory
+from factory.dataFactory import DataFactory
+from itemmodel.dataModel import DataModel
+from itemmodel.listModel import ListModel
 from enums import FileType, ItemFlags
-from path import fileListPath
+from itemmodel.listModelItem import ListModelFileItem, ListModelFolderItem
+from proxy.dataModelProxy import DataModelProxy
+from proxy.searchListModelProxy import SearchListModelProxy
+from service.dataListModelService import DataListModelFolderItemService
+from service.saveListModelService import SaveListModelFolderItemService
+from widget.breadCrumbWidget import BreadCrumb
+from widget.dialog.filePickerDialog import FilePickerDialog
 from widget.dialog.preferencesDialogue import Preferences
-from widget.textEdit import TextEdit
+from widget.dialog.textEditorDialog import TextEditorDialog
 from widget.listView import ListView
 
 
@@ -28,159 +36,139 @@ class Ui_Form(object):
 	def setupUi(self, Form):
 		Form.setObjectName("Form")
 		Form.resize(868, 516)
-		self.horizontalLayout_3 = QtWidgets.QHBoxLayout(Form)
-		self.horizontalLayout_3.setObjectName("horizontalLayout_3")
-		self.horizontalLayout_3.setContentsMargins(0, 0, 0, 0)
-		self.horizontalLayout_3.setSpacing(0)
-		self.fileListWidget = QtWidgets.QWidget(Form)
+
+		self.breadCrumbWidgetLayout = QtWidgets.QVBoxLayout(Form)
+		self.breadCrumbWidgetLayout.setContentsMargins(0, 0, 0, 0)
+		self.breadCrumbWidgetLayout.setSpacing(0)
+
+		self.breadCrumb = BreadCrumb(Form)
+		qss = core.fbs.qss('breadCrumb.qss')
+		if qss is not None:
+			self.breadCrumb.setStyleSheet(qss)
+		else:
+			log.warning('breadCrumb.qss is not loaded successfully')
+		self.mainWidget = QtWidgets.QWidget(Form)
+
+		self.breadCrumbWidgetLayout.addWidget(self.breadCrumb)
+		self.breadCrumbWidgetLayout.addWidget(self.mainWidget)
+
+		self.mainWidgetLayout = QtWidgets.QHBoxLayout(self.mainWidget)
+		self.mainWidgetLayout.setObjectName("horizontalLayout_3")
+		self.mainWidgetLayout.setContentsMargins(0, 0, 0, 0)
+		self.mainWidgetLayout.setSpacing(0)
+		self.fileListWidget = QtWidgets.QWidget(self.mainWidget)
 		sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
 		sizePolicy.setHorizontalStretch(0)
 		sizePolicy.setVerticalStretch(0)
 		sizePolicy.setHeightForWidth(self.fileListWidget.sizePolicy().hasHeightForWidth())
 		self.fileListWidget.setSizePolicy(sizePolicy)
 		self.fileListWidget.setObjectName("fileListWidget")
-		self.verticalLayout_2 = QtWidgets.QVBoxLayout(self.fileListWidget)
-		self.verticalLayout_2.setContentsMargins(0, 0, 0, 0)
-		self.verticalLayout_2.setObjectName("verticalLayout_2")
-		self.verticalLayout_2.setSpacing(0)
+		self.fileListWidgetLayout = QtWidgets.QVBoxLayout(self.fileListWidget)
+		self.fileListWidgetLayout.setContentsMargins(0, 0, 0, 0)
+		self.fileListWidgetLayout.setObjectName("verticalLayout_2")
+		self.fileListWidgetLayout.setSpacing(6)
+
 		self.searchWidgetInFileList = QtWidgets.QWidget(self.fileListWidget)
+		qss = core.fbs.qss('searchWidgetInFileList.qss')
+		if qss is not None:
+			self.searchWidgetInFileList.setStyleSheet(qss)
+		else:
+			log.warning(f'Qss file is not loaded successfully. Filename is "searchLineBoxInFileList.qss"')
+
 		self.searchWidgetInFileList.setObjectName("searchWidgetInFileList")
-		self.verticalLayout_4 = QtWidgets.QVBoxLayout(self.searchWidgetInFileList)
-		self.verticalLayout_4.setContentsMargins(0, 0, 0, 0)
-		self.verticalLayout_4.setSpacing(0)
-		self.horizontalLayout_2 = QtWidgets.QHBoxLayout()
-		self.horizontalLayout_2.setContentsMargins(0, 0, 0, 0)
-		self.horizontalLayout_2.setObjectName("horizontalLayout_2")
-		self.horizontalLayout_2.setSpacing(0)
+		self.searchWidgetInFileListLayout = QtWidgets.QVBoxLayout(self.searchWidgetInFileList)
+		self.searchWidgetInFileListLayout.setContentsMargins(4, 0, 4, 0)
+		self.searchWidgetInFileListLayout.setSpacing(2)
 
 		self.searchLineBoxInFileList = QtWidgets.QLineEdit(self.searchWidgetInFileList)
+		self.searchLineBoxInFileList.setPlaceholderText('Search')
 		self.searchLineBoxInFileList.setObjectName("searchLineBoxInFileList")
-		self.verticalLayout_4.addLayout(self.horizontalLayout_2)
-
-		self.pathTextLabel = QtWidgets.QLabel(self.searchWidgetInFileList)
-		self.pathTextLabel.setIndent(6)
-		self.pathTextLabel.setText('/')
-		self.pathTextLabel.setStyleSheet('color:gray')
-
-		self.verticalLayout_4.addWidget(self.searchLineBoxInFileList)
-		self.verticalLayout_4.addWidget(self.pathTextLabel)
 
 		self.addFileWidget = QtWidgets.QWidget(self.searchWidgetInFileList)
 		self.addFileWidget.setObjectName("addFileWidget")
-		self.horizontalLayout_6 = QtWidgets.QHBoxLayout(self.addFileWidget)
-		self.horizontalLayout_6.setSpacing(0)
-		self.horizontalLayout_6.setSizeConstraint(QtWidgets.QLayout.SetDefaultConstraint)
-		self.horizontalLayout_6.setContentsMargins(0, 0, 0, 0)
-		self.horizontalLayout_6.setObjectName("horizontalLayout_6")
+
+		self.searchWidgetInFileListLayout.addWidget(self.addFileWidget)
+		self.searchWidgetInFileListLayout.addWidget(self.searchLineBoxInFileList)
+		# self.searchWidgetInFileListLayout.addWidget(self.pathTextLabel)
+
+		self.addFileWidgetLayout = QtWidgets.QHBoxLayout(self.addFileWidget)
+		self.addFileWidgetLayout.setSpacing(0)
+		self.addFileWidgetLayout.setSizeConstraint(QtWidgets.QLayout.SetDefaultConstraint)
+		self.addFileWidgetLayout.setContentsMargins(0, 0, 0, 0)
+		self.addFileWidgetLayout.setObjectName("horizontalLayout_6")
 		self.newFileButton = QtWidgets.QPushButton(self.addFileWidget)
 		self.newFileButton.setObjectName("newFileButton")
 		icon = QtGui.QIcon()
 		icon.addPixmap(QtGui.QPixmap(core.fbs.icons('baseline_insert_drive_file_white_48dp.png')))
 		self.newFileButton.setIcon(icon)
-		# self.newFileButton.setIconSize( QtCore.QSize( 18, 18 ) )
-		self.horizontalLayout_6.addWidget(self.newFileButton)
+
+		self.addFileWidgetLayout.addWidget(self.newFileButton)
 		self.newFolderButton = QtWidgets.QPushButton(self.addFileWidget)
 		self.newFolderButton.setEnabled(True)
 		icon = QtGui.QIcon()
 		icon.addPixmap(QtGui.QPixmap(core.fbs.icons('baseline_create_new_folder_white_48dp.png')))
 		self.newFolderButton.setIcon(icon)
-		# self.newFolderButton.setIconSize( QtCore.QSize( 18, 18 ) )
+
 		sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
 		sizePolicy.setHorizontalStretch(1)
 		sizePolicy.setVerticalStretch(0)
 		self.searchLineBoxInFileList.setSizePolicy(sizePolicy)
-		self.horizontalLayout_6.addWidget(self.newFolderButton)
-		self.horizontalLayout_2.addWidget(self.addFileWidget)
-		self.verticalLayout_2.addWidget(self.searchWidgetInFileList)
+		self.addFileWidgetLayout.addWidget(self.newFolderButton)
+
+		self.fileListWidgetLayout.addWidget(self.searchWidgetInFileList)
 		self.fileListView = ListView(self.fileListWidget)
+		delegate = FileViewDelegate(self)
+		self.fileListView.setItemDelegate(delegate)
 		self.fileListView.setObjectName("fileListView")
-		self.verticalLayout_2.addWidget(self.fileListView)
-		self.horizontalLayout_3.addWidget(self.fileListWidget)
 
+		self.fileListWidgetLayout.addWidget(self.fileListView)
+		self.mainWidgetLayout.addWidget(self.fileListWidget)
 
-		self.editorWidget = QtWidgets.QWidget(Form)
-		sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
-		sizePolicy.setHorizontalStretch(1)
-		sizePolicy.setVerticalStretch(0)
-		sizePolicy.setHeightForWidth(self.editorWidget.sizePolicy().hasHeightForWidth())
-		self.editorWidget.setSizePolicy(sizePolicy)
-		self.editorWidget.setObjectName("editorWidget")
-		self.verticalLayout = QtWidgets.QVBoxLayout(self.editorWidget)
-		self.verticalLayout.setSpacing(0)
-		self.verticalLayout.setContentsMargins(0, 0, 0, 0)
-		self.verticalLayout.setObjectName("verticalLayout")
+		self.dataViewWidget = QtWidgets.QFrame(self.mainWidget)
+		self.dataViewWidget.setObjectName('dataViewWidget')
+		self.dataViewWidgetLayout = QtWidgets.QVBoxLayout(self.dataViewWidget)
+		self.dataViewWidgetLayout.setContentsMargins(0, 0, 0, 0)
+		self.dataViewWidgetLayout.setSpacing(0)
 
-		self.searchWidgetInEditor = QtWidgets.QWidget(self.editorWidget)
-		self.searchWidgetInEditor.setObjectName("searchWidgetInEditor")
-		self.verticalLayout_3 = QtWidgets.QVBoxLayout(self.searchWidgetInEditor)
-		self.verticalLayout_3.setSpacing(0)
-		self.verticalLayout_3.setContentsMargins(12, 0, 0, 0)
-		self.verticalLayout_3.setObjectName("verticalLayout_3")
-		self.searchWidget = QtWidgets.QWidget(self.searchWidgetInEditor)
-		self.searchWidget.setObjectName("searchWidget")
-		self.horizontalLayout_5 = QtWidgets.QHBoxLayout(self.searchWidget)
-		self.horizontalLayout_5.setSpacing(0)
-		self.horizontalLayout_5.setContentsMargins(0, 0, 0, 0)
-		self.horizontalLayout_5.setObjectName("horizontalLayout_5")
-		self.searchLineBoxInEditor = QtWidgets.QLineEdit(self.searchWidget)
-		self.searchLineBoxInEditor.setObjectName("searchLineBoxInEditor")
-		self.horizontalLayout_5.addWidget(self.searchLineBoxInEditor)
-		spacer = QtWidgets.QSpacerItem(16, 0, QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Minimum)
-		self.horizontalLayout_5.addItem(spacer)
-		self.prevWordButton = QtWidgets.QPushButton(self.searchWidget)
-		self.prevWordButton.setObjectName("prevWordButton")
-		self.horizontalLayout_5.addWidget(self.prevWordButton)
-		self.nextWordButton = QtWidgets.QPushButton(self.searchWidget)
-		self.nextWordButton.setEnabled(True)
-		self.nextWordButton.setObjectName("nextWordButton")
-		self.horizontalLayout_5.addWidget(self.nextWordButton)
-		spacer2 = QtWidgets.QSpacerItem(16, 0, QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Minimum)
-		self.horizontalLayout_5.addItem(spacer2)
+		self.dataViewToolBar = QtWidgets.QFrame(self.dataViewWidget)
+		self.dataViewToolBar.setObjectName('dataViewToolBar')
+		self.dataViewToolBarLayout = QtWidgets.QHBoxLayout(self.dataViewToolBar)
+		self.dataViewToolBarLayout.setContentsMargins(4, 4, 4, 0)
+		self.dataViewToolBarLayout.setSpacing(0)
 
-		self.doneButton = QtWidgets.QPushButton(self.searchWidget)
-		self.doneButton.setObjectName("doneButton")
-		self.horizontalLayout_5.addWidget(self.doneButton)
-		spacer3 = QtWidgets.QSpacerItem(12, 0, QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Minimum)
-		self.horizontalLayout_5.addItem(spacer3)
-		self.replaceCheckBox = QtWidgets.QCheckBox(self.searchWidget)
-		self.replaceCheckBox.setObjectName("replaceCheckBox")
-		self.horizontalLayout_5.addWidget(self.replaceCheckBox)
-		self.verticalLayout_3.addWidget(self.searchWidget)
-		self.replaceWidget = QtWidgets.QWidget(self.searchWidgetInEditor)
-		self.replaceWidget.setObjectName("replaceWidget")
-		self.horizontalLayout_4 = QtWidgets.QHBoxLayout(self.replaceWidget)
-		self.horizontalLayout_4.setContentsMargins(0, 0, 0, 0)
-		self.horizontalLayout_4.setSpacing(0)
-		self.horizontalLayout_4.setObjectName("horizontalLayout_4")
-		self.replaceLineEdit = QtWidgets.QLineEdit(self.replaceWidget)
-		self.replaceLineEdit.setObjectName("replaceLineEdit")
-		self.horizontalLayout_4.addWidget(self.replaceLineEdit)
-		spacer4 = QtWidgets.QSpacerItem(16, 0, QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Minimum)
-		self.horizontalLayout_4.addItem(spacer4)
-		self.replaceButton = QtWidgets.QPushButton(self.replaceWidget)
-		self.replaceButton.setObjectName("replaceButton")
-		self.horizontalLayout_4.addWidget(self.replaceButton)
-		self.replaceAllButton = QtWidgets.QPushButton(self.replaceWidget)
-		self.replaceAllButton.setObjectName("replaceAllButton")
-		self.horizontalLayout_4.addWidget(self.replaceAllButton)
+		self.addTextDataButton = QtWidgets.QPushButton(self.dataViewToolBar)
+		icon = QtGui.QIcon()
+		icon.addPixmap(QtGui.QPixmap(core.fbs.icons('baseline_insert_drive_file_black_48dp.png')))
+		self.addTextDataButton.setIcon(icon)
 
-		self.verticalLayout_3.addWidget(self.replaceWidget)
-		self.verticalLayout.addWidget(self.searchWidgetInEditor)
+		self.addFileDataButton = QtWidgets.QPushButton(self.dataViewToolBar)
+		icon = QtGui.QIcon()
+		icon.addPixmap(QtGui.QPixmap(core.fbs.icons('attach_file-black-18dp.svg')))
+		self.addFileDataButton.setIcon(icon)
 
-		self.editor = TextEdit(self.editorWidget)
-		self.editor.document().setDocumentMargin(16)
-		self.editor.setObjectName("editor")
-		self.editor.setFrameStyle(QtWidgets.QFrame.NoFrame)
-		self.editor.setMinimumWidth(400)
-		self.verticalLayout.addWidget(self.editor)
+		self.searchLineEditInData = QtWidgets.QLineEdit(self.dataViewToolBar)
+		self.searchLineEditInData.setPlaceholderText('Search')
 
-		# self.attachmentWidget = AttachmentWidget( self.tabWidget )
-		# self.attachmentWidget.setObjectName( 'attachment' )
+		self.dataViewToolBarLayout.addWidget(self.addTextDataButton)
+		self.dataViewToolBarLayout.addWidget(self.addFileDataButton)
+		self.dataViewToolBarLayout.addItem(
+				QtWidgets.QSpacerItem(4, 0, QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Minimum))
+		self.dataViewToolBarLayout.addWidget(self.searchLineEditInData)
 
-		# self.tabWidget.addTab( self.editorWidget, 'Editor' )
-		# self.tabWidget.addTab( self.attachmentWidget, 'Attachments' )
-		# self.tabFrameLayout.addWidget( self.editorWidget )
-		self.horizontalLayout_3.addWidget(self.editorWidget)
+		self.dataView = ListView(self.dataViewWidget)
+		dataViewDelegate = DataViewDelegate(self.dataView)
+		self.dataView.setItemDelegate(dataViewDelegate)
+
+		self.dataViewWidgetLayout.addWidget(self.dataViewToolBar)
+		self.dataViewWidgetLayout.addWidget(self.dataView)
+
+		qss = core.fbs.qss('dataView.qss')
+		if qss is not None:
+			self.dataViewWidget.setStyleSheet(qss)
+		else:
+			log.warning('Qss file is not loaded successfully. Filename is "dataView.qss"')
+
+		self.mainWidgetLayout.addWidget(self.dataViewWidget)
 
 		self.retranslateUi(Form)
 		QtCore.QMetaObject.connectSlotsByName(Form)
@@ -190,192 +178,117 @@ class Ui_Form(object):
 		Form.setWindowTitle("Form")
 		self.newFileButton.setText("File")
 		self.newFolderButton.setText("Folder")
-		self.searchLineBoxInEditor.setPlaceholderText("Find")
-		self.prevWordButton.setText("<")
-		self.nextWordButton.setText(">")
-		self.doneButton.setText("Done")
-		self.replaceCheckBox.setText("Replace")
-		self.replaceLineEdit.setPlaceholderText("Replace")
-		self.replaceButton.setText("Replace")
-		self.replaceAllButton.setText("All")
 
 
-class MainWidget(Ui_Form, QtWidgets.QWidget):
-	def __init__(self, config, root, parent = None):
+class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, DataListModelFolderItemService):
+	def __init__(self, root, parent = None):
 		super(MainWidget, self).__init__(parent)
-		self.rootFolder = root
-		self.currentFolder = self.rootFolder
-		self.timer = QtCore.QTimer(self)
-		self.startFirst = False
-		self.startLast = False
-		self.config = config
-		self.styleItems = map(lambda item: StyleItem.create(item), self.config.get('patterns'))
+
 		self.setupUi(self)
+
+		self.fileListModel = ListModel()
+		self.fileListModel.setCurrentFolder(root)
+
+		self.fileListProxyModel = SearchListModelProxy()
+		self.fileListProxyModel.setFilterCaseSensitivity(QtCore.Qt.CaseInsensitive)
+		self.fileListProxyModel.setSourceModel(self.fileListModel)
+
+		self.dataModel = DataModel(self.fileListModel)
+
+		self.dataProxyModel = DataModelProxy()
+		self.dataProxyModel.setFilterCaseSensitivity(QtCore.Qt.CaseInsensitive)
+		self.dataProxyModel.setSourceModel(self.dataModel)
+
+		self.dataView.setModel(self.dataProxyModel)
+
+		self.initializeShortcuts()
 		self.initSignalsAndSlots()
 		self.initialize()
 
 
-	def initialize(self):
-		self.editor.setAcceptDrops(True)
-		self.fileListView.setAttribute(QtCore.Qt.WA_MacShowFocusRect, 0)
+	def initializeShortcuts(self):
 		self.enterFolderShortcut = QtWidgets.QShortcut(self.fileListView)
 		self.enterFolderShortcut.setContext(QtCore.Qt.WidgetShortcut)
 		self.enterFolderShortcut.setKey(QtGui.QKeySequence(QtCore.Qt.Key_Return))
-		self.enterFolderShortcut.activated.connect(self.changeNextFolder)
 
 		self.deleteItemShortCut = QtWidgets.QShortcut(self.fileListView)
 		self.deleteItemShortCut.setContext(QtCore.Qt.WidgetShortcut)
-		self.deleteItemShortCut.setKey(QtGui.QKeySequence(QtCore.Qt.Key_Backspace))
-		self.deleteItemShortCut.activated.connect(self.delete)
+		self.deleteItemShortCut.setKey(QtGui.QKeySequence('Ctrl+Backspace'))
+		self.deleteItemShortCut.activated.connect(self.deleteListModelFileItem)
 
 		self.focusListShortCut = QtWidgets.QShortcut(self)
 		self.focusListShortCut.setContext(QtCore.Qt.WidgetWithChildrenShortcut)
 		self.focusListShortCut.setKey(QtGui.QKeySequence('Ctrl+L'))
 		self.focusListShortCut.activated.connect(self.changeFocus)
 
-		self.nextWordSearchWordShortcut = QtWidgets.QShortcut(self.searchWidgetInEditor)
-		self.nextWordSearchWordShortcut.setContext(QtCore.Qt.WidgetWithChildrenShortcut)
-		self.nextWordSearchWordShortcut.setKey(QtGui.QKeySequence(QtCore.Qt.Key_Return))
-		self.nextWordSearchWordShortcut.activated.connect(self.nextSearchText)
 		self.cdShortcut = QtWidgets.QShortcut(self)
-		self.cdShortcut.setContext(QtCore.Qt.WidgetWithChildrenShortcut)
-		self.cdShortcut.setKey(QtGui.QKeySequence(QtCore.Qt.Key_Escape))
+		self.cdShortcut.setContext(QtCore.Qt.ApplicationShortcut)
+		self.cdShortcut.setKey(QtGui.QKeySequence(QtCore.Qt.Key_Backspace))
 		self.cdShortcut.activated.connect(self.changePrevFolder)
+
 		self.pinnedFileShortcut = QtWidgets.QShortcut(self.parent())
 		self.pinnedFileShortcut.setContext(QtCore.Qt.WidgetWithChildrenShortcut)
 		self.pinnedFileShortcut.setKey(QtGui.QKeySequence('Ctrl+P'))
-		self.pinnedFileShortcut.activated.connect(self.pinnedItem)
+		self.pinnedFileShortcut.activated.connect(self.pinnedListModelFileItem)
 
-		self.fileListView.setModel(self.currentFolder.fileListModel)
-		self.fileListView.setEditor(self)
-		if self.rootFolder.isEmpty():
-			self.newFile()
-		else:
-			self.loadFile(self.currentFolder.fileListModel.index(0))
+		self.newTextFileShortcut = QtWidgets.QShortcut(self)
+		self.newTextFileShortcut.setContext(QtCore.Qt.WidgetWithChildrenShortcut)
+		self.newTextFileShortcut.setKey(QtGui.QKeySequence('Ctrl+T'))
+		self.newTextFileShortcut.activated.connect(self.createNewTextFile)
 
-		self.highlighter = Highlighter(self.editor, self.styleItems)
-		self.searchLineBoxInEditor.setPlaceholderText('Find')
-		self.searchLineBoxInFileList.setPlaceholderText('Search')
-		self.searchWidgetInEditor.hide()
-		self.replaceWidget.hide()
+
+	def initialize(self):
+		self.fileListView.setAttribute(QtCore.Qt.WA_MacShowFocusRect, 0)
+		self.fileListView.setModel(self.fileListProxyModel)
+
 		self.fileListWidget.setMaximumWidth(200)
-		searchFormat = QtGui.QTextCharFormat()
-		searchFormat.setBackground(QtGui.QColor('yellow'))
-		searchStyle = StyleItem('search', '', None, None, None, None, None, None, 'yellow', None)
-		self.rule = HighlightingRule(self.editor)
-		self.rule.style = searchStyle
-		self.highlighter.highlightingRules.append(self.rule)
-		self.rule.pattern = re.compile('')
-		self.editor.setFocus()
 		self.fileListView.setAcceptDrops(True)
 		self.fileListView.setDragEnabled(True)
-		self.currentFolder.fileListModel.modelReset.connect(self.setCurrentIndexOfListView)
+		self.breadCrumb.setPath(self.fileListModel.currentFolder())
+
+		if self.fileListModel.isEmpty() is False:
+			self.fileListView.setCurrentIndex(self.fileListModel.index(0))
 
 
 	def initSignalsAndSlots(self):
-		self.doneButton.clicked.connect(self.hideSearchWidgetInEditor)
-		self.prevWordButton.clicked.connect(self.prevSearchText)
-		self.nextWordButton.clicked.connect(self.nextSearchText)
-		self.searchLineBoxInEditor.textChanged.connect(self.searchWord)
 		self.newFileButton.clicked.connect(self.newFile)
 		self.newFolderButton.clicked.connect(self.newFolder)
-		self.searchLineBoxInFileList.textChanged.connect(self.searchFileNames)
 		self.fileListView.currentIndexChanged.connect(self.loadFile)
-		self.currentFolder.fileListModel.dataUpdated.connect(self.titleNameChanged)
-		self.timer.timeout.connect(self.saveFile)
+
+		self.enterFolderShortcut.activated.connect(self.changeNextFolder)
 		self.fileListView.doubleClicked.connect(self.changeNextFolder)
-		self.replaceCheckBox.stateChanged.connect(
-				lambda value: self.replaceWidget.show() if value else self.replaceWidget.hide())
-		self.replaceAllButton.clicked.connect(self.replaceAllText)
-		self.replaceButton.clicked.connect(self.replaceText)
-		self.editor.document().contentsChange.connect(self.contentChanged)
+		self.dataView.doubleClicked.connect(self.openData)
+		self.breadCrumb.clicked.connect(self.clickedBreadCrumb)
+		self.fileListView.customContextMenuRequested.connect(self.showRightClickPopupForListView)
+		self.dataView.customContextMenuRequested.connect(self.showRightClickPopupForDataView)
+
+		self.searchLineBoxInFileList.textChanged.connect(self.searchFileListView)
+		self.searchLineEditInData.textChanged.connect(self.searchDataView)
+
+		self.dataModel.dataChanged.connect(self.saveDataModel)
+		self.dataModel.rowsInserted.connect(self.saveDataModel)
+		self.dataModel.rowsRemoved.connect(self.saveDataModel)
+		self.dataModel.rowsMoved.connect(self.saveDataModel)
+
+		self.addTextDataButton.clicked.connect(self.createNewTextFile)
+		self.addFileDataButton.clicked.connect(self.createNewFile)
+
+		self.dataModel.modelReset.connect(self.updateDataWidget)
+		self.breadCrumb.dropped.connect(self.dropItemToBreadCrumb)
 
 
-	def nextSearchText(self):
-		if not self.startFirst:
-			if not self._nextSearchText():
-				self.startFirst = True
+	def openData(self, index):
+		data = index.data(QtCore.Qt.UserRole)
+		dialog = DataDialogFactory.create(data, self)
+		if dialog is not None:
+			qss = core.fbs.qss('dataShowDialog.qss')
+			if qss is not None:
+				dialog.setStyleSheet(qss)
+			else:
+				log.warning('dataShowDialog.qss is not loaded successfully')
+			dialog.open()
 		else:
-			self._nextSearchText(0)
-			self.startFirst = False
-
-
-	def _nextSearchText(self, position = None):
-		cursor = self.editor.textCursor()
-		if position is None:
-			cursor.setPosition(cursor.selectionEnd())
-		else:
-			cursor.setPosition(position)
-		block = cursor.block()
-		text = block.text()[cursor.positionInBlock():]
-		while block.isValid():
-			matches = self.rule.search(text)
-			for match in matches:
-				cursor.setPosition(cursor.positionInBlock() + block.position() + match.start())
-				cursor.movePosition(QtGui.QTextCursor.Right, QtGui.QTextCursor.KeepAnchor,
-									match.end() - match.start())
-
-				self.editor.setTextCursor(cursor)
-				return True
-
-			block = block.next()
-			cursor.setPosition(block.position())
-			text = block.text()
-		return False
-
-
-	def prevSearchText(self):
-		if not self.startLast:
-			if not self._prevSearchText():
-				self.startLast = True
-		else:
-			self._prevSearchText(self.editor.document().characterCount() - 1)
-			self.startLast = False
-
-
-	def _prevSearchText(self, position = None):
-		cursor = self.editor.textCursor()
-		if position is None:
-			cursor.setPosition(cursor.selectionStart())
-		else:
-			cursor.setPosition(position)
-		block = cursor.block()
-		text = block.text()[0:cursor.positionInBlock()]
-		while block.isValid():
-			matches = list(self.rule.search(text))
-			if len(matches) > 0:
-				match = matches[-1]
-				cursor.setPosition(block.position() + match.end())
-				cursor.movePosition(QtGui.QTextCursor.Left, QtGui.QTextCursor.KeepAnchor,
-									match.end() - match.start())
-				self.editor.setTextCursor(cursor)
-				return True
-
-			block = block.previous()
-			cursor.setPosition(block.position() + len(block.text()))
-			text = block.text()
-		return False
-
-
-	def replaceAllText(self):
-		oldWord = self.searchLineBoxInEditor.text()
-		if oldWord:
-			newWord = self.replaceLineEdit.text()
-			block = self.editor.document().firstBlock()
-			cursor = self.editor.textCursor()
-			cursor.beginEditBlock()
-			while block.isValid():
-				text = block.text()
-				if text.find(oldWord) != -1:
-					tcursor = QtGui.QTextCursor(block)
-					tcursor.select(QtGui.QTextCursor.BlockUnderCursor)
-					tcursor.removeSelectedText()
-					tcursor.clearSelection()
-					newText = text.replace(oldWord, newWord)
-					tcursor.insertBlock()
-					tcursor.insertText(newText)
-				block = block.next()
-			cursor.endEditBlock()
+			QtWidgets.QMessageBox.warning(self, 'Unsupported Data', 'Data is not upsupported')
 
 
 	def changeFocus(self):
@@ -386,197 +299,157 @@ class MainWidget(Ui_Form, QtWidgets.QWidget):
 			self.fileListView.setFocus()
 
 
-	def replaceText(self):
-		cursor = self.replaceNextText(self.editor.textCursor())
-		self.editor.setTextCursor(cursor)
-		self.nextSearchText()
+	def dropItemToBreadCrumb(self, fileItemList, mimeData):
+		self.fileListModel.dropMimeData(mimeData, None, -1, -1, QtCore.QModelIndex())
 
 
-	def pinnedItem(self):
+	def pinnedListModelFileItem(self):
 		index = self.fileListView.currentIndex()
-		data = index.internalPointer()
+		data, old = self.fileListModel.beginEditData(index)
 		data.setFixed(not data.isFixed)
 		if data.isFixed:
-			index.model().moveItem(index.row(), 0)
+			self.fileListModel.moveItem(index.row(), 0)
 		self.fileListView.update()
 
 
-	def replaceNextText(self, cursor):
-		oldWord = self.searchLineBoxInEditor.text()
-		if oldWord and cursor.hasSelection():
-			newWord = self.replaceLineEdit.text()
-			cursor.beginEditBlock()
-			cursor.insertText(newWord)
-			cursor.endEditBlock()
-		return cursor
+	def searchFileListView(self, text):
+		self.fileListProxyModel.setFilterRegExp(text)
 
 
-	def searchWord(self, text):
-		self.rule.pattern = re.compile(text)
-		self.updateEditor()
-
-
-	def updateEditor(self):
-		cursor = self.editor.textCursor()
-		cursor.setPosition(0)
-		block = cursor.block()
-		position = cursor.position()
-		firstPosition = position
-		while block.isValid():
-			position = block.position() + len(block.text())
-			block = block.next()
-		self.editor.document().contentsChange.disconnect(self.contentChanged)
-		self.editor.document().contentsChange.emit(firstPosition, 0, position)
-		self.editor.document().contentsChange.connect(self.contentChanged)
-
-
-	def showSearch(self):
-		self.searchWidgetInEditor.show()
-		text = self.editor.textCursor().selectedText()
-		self.searchLineBoxInEditor.setText(text)
-		self.searchLineBoxInEditor.setFocus()
+	def searchDataView(self, text):
+		self.dataProxyModel.setFilterRegExp(text)
 
 
 	def newFile(self):
-		filename = self.generateFileName()
-		f = open(filename, "w+")
 		now = datetime.datetime.now()
 		defaultName = 'New Note'
 		displayName, result = QtWidgets.QInputDialog.getText(self, 'Note Name', 'Enter a note name',
 															 text = defaultName)
 		if not result or not displayName:
 			return
-
-		index = self.currentFolder.fileListModel.insertData(
-				FileListItem(filename, displayName, lastUpdate = now.strftime("%Y-%m-%d %H:%M")), 0)
-		self.titleNameChanged()
-		f.close()
-		index = self.currentFolder.fileListModel.index(index)
-		if index.isValid():
-			self.loadFile(index)
+		newFile = ListModelFileItem(ListModelFileItem.IDGenerator(), displayName, None, lastUpdate = now)
+		try:
+			self.dataListModelService().save(newFile)
+			i = self.fileListModel.insertData(newFile, 0)
+			index = self.fileListModel.index(i)
+			self.fileListView.setCurrentIndex(index)
+		# Save root file into disc
+		except InvalidListModelItemException as e:
+			log.warning(e)
+		except Exception as e:
+			log.warning(f'Data is not inserted successfully, Exception is {e}')
 
 
 	def newFolder(self):
-		folderName = self.generateFolderName()
-		os.makedirs(folderName)
 		defaultName = 'New Folder'
 		displayName, result = QtWidgets.QInputDialog.getText(self, 'Folder Name', 'Enter a folder name',
 															 text = defaultName)
 		if not result or not displayName:
 			return
-		newFolder = FolderListItem(folderName, displayName, self.currentFolder)
-		self.currentFolder.fileListModel.insertData(newFolder, 0)
-		self.titleNameChanged()
+
+		newFolder = ListModelFolderItem(ListModelFileItem.IDGenerator(), displayName, None)
+		try:
+			i = self.fileListModel.insertData(newFolder, 0)
+			index = self.fileListModel.index(i)
+			self.fileListView.setCurrentIndex(index)
+		# Save root file into disc
+		except InvalidListModelItemException as e:
+			log.warning(e)
+		except Exception as e:
+			log.warning(f'Data is not inserted successfully, Exception is {e}')
+
+
+	def createNewTextFile(self):
+		if self.dataModel.hasFileItem() is True:
+			textEditorDialog = TextEditorDialog(self)
+			textEditorDialog.fileSaved.connect(self.insertDataToDataModel)
+			textEditorDialog.open()
+
+
+	def createNewFile(self):
+		if self.dataModel.hasFileItem() is True:
+			dialog = FilePickerDialog(self)
+			value = dialog.exec_()
+			if value == QtWidgets.QDialog.Accepted and dialog.data.isValid():
+				data = dialog.data
+				fileData = DataFactory.fileDataFromDialogData(data)
+				if fileData is not None:
+					self.insertDataToDataModel(fileData)
+
+
+	def updateDataWidget(self):
+		dataListModelItem = self.dataModel.listModelFileItem()
+		if dataListModelItem is not None:
+			self.dataViewWidget.setEnabled(True)
+		else:
+			self.dataViewWidget.setDisabled(True)
+
+
+	def saveDataModel(self):
+		self.dataListModelService().save(self.dataModel.listModelFileItem())
+
+
+	def insertDataToDataModel(self, dataModelItem):
+		listFileItem = self.dataModel.listModelFileItem()
+		childNumber = listFileItem.childNumber()
+
+		index = self.fileListModel.index(childNumber)
+		_, _ = self.fileListModel.beginEditData(index)
+		self.dataModel.insertData(dataModelItem)
+		self.dataListModelService().save(self.dataModel.listModelFileItem())
+		self.fileListModel.endEditData(index)
 
 
 	def changePrevFolder(self):
-		parent = self.currentFolder.parent
-		if self.searchWidgetInEditor.isVisible():
-			self.hideSearchWidgetInEditor()
-		elif parent:
-			self.saveFile()
-			oldFolder = self.currentFolder
-			self.currentFolder.currentFilePath = None
-			self.searchLineBoxInFileList.setText('')
-			self.currentFolder.fileListModel.dataUpdated.disconnect(self.titleNameChanged)
-			self.currentFolder = parent
-			self.currentFolder.fileListModel.dataUpdated.connect(self.titleNameChanged)
-			index = parent.fileListModel.getIndex(oldFolder.filename)
-			index = parent.fileListModel.index(index)
-			self.fileListView.setModel(parent.fileListModel)
-			if index.isValid():
-				parent.loadFile(editor = self.editor)
-				self.fileListView.setCurrentIndex(index)
-			self.pathTextLabel.setText(parent.title)
-			self.currentFolder.currentFilePath = None
-		else:
-			print('Folder is root folder')
-			exit(0)
+		currentFolder = self.fileListModel.currentFolder()
+		parent = currentFolder.parent()
+		if parent is not None:
+			childNumber = currentFolder.childNumber()
+			if childNumber is not None:
+				self.changeFolder(parent)
+				self.fileListView.setCurrentIndex(self.fileListModel.index(childNumber))
 
 
 	def changeNextFolder(self):
-		data = self.currentFolder.fileListModel.getItem(self.fileListView.currentIndex().row())
-		self.changeFolder(data)
+		listModelFileItem = self.fileListView.currentIndex().data(QtCore.Qt.UserRole)
+		if listModelFileItem.type == FileType.FOLDER:
+			self.fileListView.setCurrentIndex(QtCore.QModelIndex())
+			self.changeFolder(listModelFileItem)
 
 
-	def changeFolder(self, data):
-		if isinstance(data, FolderListItem):
-			self.saveFile()
-			self.searchLineBoxInFileList.setText('')
-			self.editor.document().blockSignals(True)
-			self.fileListView.setModel(data.fileListModel)
-			self.currentFolder.fileListModel.dataUpdated.disconnect(self.titleNameChanged)
-			self.currentFolder.currentFilePath = None
-			data.currentFilePath = None
-			self.currentFolder = data
-			self.currentFolder.fileListModel.dataUpdated.connect(self.titleNameChanged)
-			self.editor.clear()
-			self.pathTextLabel.setText(data.title)
-			self.editor.document().blockSignals(False)
+	def changeFolder(self, listModelFolderItem):
+		if isinstance(listModelFolderItem, ListModelFolderItem):
+			self.fileListModel.setCurrentFolder(listModelFolderItem)
+			self.updateBreadCrumb()
 
 
-	def searchFileNames(self, text):
-		self.currentFolder.fileListModel.search(text)
-		self.fileListWidget.update()
+	def clickedBreadCrumb(self, folder):
+		self.fileListView.setCurrentIndex(QtCore.QModelIndex())
+		self.changeFolder(folder)
 
 
-	def titleNameChanged(self):
-		# fixme ilerde bunu o an degisen klasor icin yap su an herseyi tekrardan yapıyor
-		with open(fileListPath, 'w') as outfile:
-			jsonInString = json.dumps(self.rootFolder.json())
-			outfile.write(jsonInString)
-
-
-	def setCurrentIndexOfListView(self):
-		index = self.currentFolder.fileListModel.getIndex(self.currentFolder.currentFilePath)
-		if index != -1:
-			index = self.currentFolder.fileListModel.index(index)
-			if index.isValid():
-				self.fileListView.setCurrentIndex(index)
-
-
-	def saveItemsStyle(self):
-		with open('editor.conf', 'w') as outfile:
-			dict = {}
-			dict['patterns'] = map(lambda item: item.json(), self.styleItems)
-			json.dump(dict, outfile)
-
-
-	def generateFileName(self):
-		filename = self.currentFolder.generateFileName()
-		return filename
-
-
-	def generateFolderName(self):
-		folder = self.currentFolder.generateFolderName()
-		return folder
+	def updateBreadCrumb(self):
+		listModelFileItem = self.fileListModel.currentFolder()
+		if listModelFileItem.type == FileType.FOLDER:
+			self.breadCrumb.setPath(listModelFileItem)
 
 
 	def loadFile(self, index):
-		if not index.isValid():
-			return
-		data = self.currentFolder.fileListModel.getItem(index.row())
-		self.saveFile()
-		self.fileListView.setCurrentIndex(index)
-		# self.editor.document().contentsChange.disconnect(self.contentChanged)
-		data.loadFile(editor = self.editor)
-		self.editor.document().contentsChange.connect(self.contentChanged)
-		self.currentFolder.currentFilePath = data.filename
+		if index.isValid() is False:
+			self.dataModel.setListModelFileItem(None)
+		else:
+			fileListItem = index.data(QtCore.Qt.UserRole)
+			if fileListItem.type == FileType.FILE:
+				self.dataListModelService().load(fileListItem)
+				self.dataModel.setListModelFileItem(fileListItem)
+			else:
+				self.dataModel.setListModelFileItem(None)
 
 
-	def saveFile(self):
-		if self.currentFolder.currentFilePath:
-			if os.path.isdir(self.currentFolder.currentFilePath):
-				return
-			file = open(self.currentFolder.currentFilePath, 'w')
-			file.write(self.editor.toHtml())
-			file.close()
-			self.timer.stop()
-			self.editor.document().setModified(False)
-
-
-	def delete(self):
+	def deleteListModelFileItem(self):
 		index = self.fileListView.currentIndex()
+		if index.isValid() is False:
+			return
 		if self.fileListView.model().flags(index) & ItemFlags.ItemIsSoftLink:
 			return
 		result = QtWidgets.QMessageBox.warning(self, 'Are you sure?', 'Item will be deleted',
@@ -584,63 +457,177 @@ class MainWidget(Ui_Form, QtWidgets.QWidget):
 		if result == QtWidgets.QMessageBox.No:
 			return
 
-		if self.currentFolder.fileListModel.flags(index) & ItemFlags.ItemIsDeletable:
-			data = self.currentFolder.fileListModel.getItem(index.row())
-			self.currentFolder.fileListModel.deleteItem(data)
-			if data:
-				try:
-					if data.type == FileType.FILE:
-						os.remove(data.filename)
-					elif data.type == FileType.FOLDER:
-						shutil.rmtree(data.filename)
-				except OSError as e:
-					print("Failed with:", e.strerror)
-
-				self.titleNameChanged()
-				self.currentFolder.currentFilePath = None
-				index = self.currentFolder.fileListModel.index(0)
-				if index.isValid():
-					self.loadFile(index)
+		if self.fileListModel.flags(index) & ItemFlags.ItemIsDeletable:
+			listModelFileItem = self.fileListModel.deleteRow(index)
+			self.dataListModelService().deleteListModelFileItem(listModelFileItem)
+			if self.fileListModel.isEmpty() is False:
+				index = self.fileListModel.index(0)
+				self.fileListView.setCurrentIndex(index)
 
 
-	def contentChanged(self, pos, rem, add):
-		index = self.currentFolder.fileListModel.getIndex(self.currentFolder.currentFilePath)
-		file_ = self.currentFolder.fileListModel.getItem(index)
-		# update date of the file
-		now = datetime.datetime.now()
-		newDate = now.strftime("%Y-%m-%d %H:%M")
-		if file_.lastUpdate != newDate:
-			file_.lastUpdate = newDate
-			self.fileListView.update()
+	def deleteDataModelItem(self):
+		index = self.dataView.currentIndex()
+		result = QtWidgets.QMessageBox.warning(self, 'Are you sure?', 'Item will be deleted',
+											   QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
+		if result == QtWidgets.QMessageBox.No:
+			return
 
-		if index != -1 and index != 0:
-			self.currentFolder.fileListModel.moveItem(index, 0)
-			self.titleNameChanged()
-		self.timer.start(600)
+		dataModelItem = self.dataModel.deleteRow(index)
+		self.dataListModelService().deleteDataModelItem(dataModelItem)
 
 
-	def reformatBlocks(self):
-		print('reformated')
-
-
-	def getFirstVisibleCursor(self):
-		return self.editor.cursorForPosition(QtCore.QPoint(0, 0))
-
-
-	def hideSearchWidgetInEditor(self):
-		self.searchWord('')
-		self.searchWidgetInEditor.hide()
+	def renameDataModelItem(self):
+		index = self.dataView.currentIndex()
+		if index.isValid():
+			data = index.data(QtCore.Qt.UserRole)
+			listModelFileItem = self.dataModel.listModelFileItem()
+			fileListIndex = self.fileListModel.index(listModelFileItem.childNumber())
+			newText, result = QtWidgets.QInputDialog.getText(self, 'Rename File', 'New Data Name', text = data.name)
+			if result and fileListIndex.isValid():
+				self.fileListModel.beginEditData(fileListIndex)
+				self.dataModel.beginEditData(index)
+				data.setName(newText)
+				self.dataModel.endEditData(index)
+				self.fileListModel.endEditData(fileListIndex)
 
 
 	def openPreferences(self):
+		return
 		preferences = Preferences(self, preferences = self.styleItems)
 		preferences.acceptPreferences.connect(self.closePreferences)
 		preferences.open()
 
 
-	def closePreferences(self, patterns):
-		self.styleItems = patterns
-		self.highlighter.updateHighlighterRules(patterns)
-		self.highlighter.highlightingRules.append(self.rule)
-		self.updateEditor()
-		self.saveItemsStyle()
+	#
+	#
+	# def closePreferences(self, patterns):
+	# 	self.styleItems = patterns
+	# 	self.highlighter.updateHighlighterRules(patterns)
+	# 	self.highlighter.highlightingRules.append(self.rule)
+	# 	self.updateEditor()
+	# 	self.saveItemsStyle()
+
+	def showRightClickPopupForDataView(self, pos):
+		if self.dataModel.listModelFileItem() is None or self.dataModel.listModelFileItem().type == FileType.FOLDER:
+			return
+
+		globalPos = self.dataView.mapToGlobal(pos)
+		contextMenu = QtWidgets.QMenu()
+		index = self.dataView.indexAt(pos)
+		rename = ''
+		delete = ''
+		if index.isValid():
+			rename = contextMenu.addAction('Rename')
+			delete = contextMenu.addAction('Delete')
+			contextMenu.addSeparator()
+		newText = contextMenu.addAction('New Text File')
+		newText.setShortcut(QtGui.QKeySequence('Ctrl+T'))
+		newText.setShortcutVisibleInContextMenu(True)
+
+		newImage = contextMenu.addAction('New Image File')
+		newImage.setShortcut(QtGui.QKeySequence('Ctrl+I'))
+		newImage.setShortcutVisibleInContextMenu(True)
+
+		newData = contextMenu.addAction('New Data')
+		newData.setShortcut(QtGui.QKeySequence('Ctrl+D'))
+		newData.setShortcutVisibleInContextMenu(True)
+		action = contextMenu.exec_(globalPos)
+
+		if action == newText:
+			self.createNewTextFile()
+		elif action == rename:
+			self.renameDataModelItem()
+		elif action == delete:
+			self.deleteDataModelItem()
+		elif action == newImage:
+			self.createNewFile()
+
+
+	def showRightClickPopupForListView(self, pos):
+
+		globalPos = self.fileListView.mapToGlobal(pos)
+		index = self.fileListView.indexAt(pos)
+		contextMenu = QtWidgets.QMenu()
+
+		fixItem = ''
+		renameItem = ''
+		deleteItem = ''
+		passwordItem = ''
+		addTag = ''
+		if index.isValid():
+			model = self.fileListModel
+			dataList = index.data()
+			isFixed = dataList[3]
+			isLocked = dataList[5]
+
+			if not model.flags(index) & ItemFlags.ItemIsSoftLink:
+				fixItem = contextMenu.addAction('Unpin Note' if isFixed else 'Pin Note')
+				addTag = contextMenu.addAction('Add Tag')
+				renameItem = contextMenu.addAction("Rename")
+				deleteItem = contextMenu.addAction('Delete')
+				contextMenu.addSeparator()
+				if isLocked is False:
+					passText = "Set Password"
+				else:
+					passText = "Remove Password"
+					if isLocked:
+						lockText = 'Unlock'
+					else:
+						lockText = 'Lock'
+
+					lockItem = contextMenu.addAction(lockText)
+				passwordItem = contextMenu.addAction(passText)
+
+			contextMenu.addSeparator()
+		newFile = contextMenu.addAction('New Note')
+		newFolder = contextMenu.addAction('New Folder')
+
+		action = contextMenu.exec_(globalPos)
+
+		if action == renameItem:
+			self.renameListModelFileItem()
+		elif action == deleteItem:
+			self.deleteListModelFileItem()
+		elif action == newFile:
+			self.newFile()
+		elif action == newFolder:
+			self.newFolder()
+		elif action == fixItem:
+			self.pinnedListModelFileItem()
+
+		elif action == addTag:
+			self.addTaListModelFileItem()
+
+
+	# elif action == passwordItem:
+	# 	self.setPassword()
+
+	def renameListModelFileItem(self):
+		index = self.fileListView.currentIndex()
+		model = self.fileListModel
+		newText, result = QtWidgets.QInputDialog.getText(self, 'Rename File', 'New file name', text = index.data()[1])
+		if result:
+			data, old = model.beginEditData(index)
+			data.setName(newText)
+			data.setDisplayName(newText)
+			model.endEditData(index)
+
+
+	def addTaListModelFileItem(self):
+		index = self.fileListView.currentIndex()
+		model = self.fileListModel
+		listModelFileItem = index.data(QtCore.Qt.UserRole)
+		text = ';'.join(listModelFileItem.tags)
+		newTagText, result = QtWidgets.QInputDialog.getText(self, 'Tags', 'New tags', text = text)
+		if result:
+			model.beginEditData(index)
+			listModelFileItem.tags = set(filter(lambda item: item != '', newTagText.split(';')))
+			model.endEditData(index)
+# def setPassword(self):
+# 	return
+# 	index = self.fileListView.currentIndex()
+# 	password, result = QtWidgets.QInputDialog.getText(self, 'Set Password', 'Enter a password',
+# 													  QtWidgets.QLineEdit.Password)
+# 	if password and result and index.isValid():
+# 		data = index.internalPointer()
+# 		data.isLocked = True

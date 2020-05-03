@@ -1,22 +1,24 @@
 #!/Users/coskunyerli/PycharmProjects/ive/venv/bin/python
 # --coding: utf-8 --
 import sys
-from PySide2 import QtWidgets
-from widget.mainWindow import MainWindow
+import PySide2.QtWidgets as QtWidgets, PySide2.QtCore as QtCore, PySide2.QtWebEngineWidgets as QtWebEngineWidgets, \
+	PySide2.QtWebEngine as QtWebEngine
 
 if __name__ == "__main__":
-    # setup app
+	# setup app
 
-    # setup Qt app for ui
-    app = QtWidgets.QApplication( sys.argv )
-    app.setApplicationName( "TodoList" )
-
-    # setup ui
-    mainWindow = MainWindow()
-    mainWindow.show()
-
-    sys.exit( app.exec_() )
-
+	# setup Qt app for ui
+	app = QtWidgets.QApplication(sys.argv)
+	app.setApplicationName("TodoList")
+	view = QtWebEngineWidgets.QWebEngineView()
+	QtWebEngineWidgets.QWebEngineSettings.defaultSettings().setAttribute(
+		QtWebEngineWidgets.QWebEngineSettings.PluginsEnabled, True)
+	QtWebEngineWidgets.QWebEngineSettings.defaultSettings().setAttribute(
+			QtWebEngineWidgets.QWebEngineSettings.PdfViewerEnabled, True)
+	view.load(QtCore.QUrl.fromLocalFile('/Users/coskunyerli/.todolist/files/Coskun_Yerli_CV.pdf'))
+	view.show()
+	sys.exit(app.exec_())
+# /Users/coskunyerli/Downloads/modularity.pdf
 """
 
 <key>NSPrincipalClass</key>
@@ -25,4 +27,3 @@ if __name__ == "__main__":
 <string>True</string>
 
 """
-

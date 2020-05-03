@@ -1,36 +1,48 @@
 #!/Users/coskunyerli/PycharmProjects/ive/venv/bin/python
 # --coding: utf-8 --
 import sys
-import core
 import logging as log
-
-from widget.mainWindow import MainWindow
 from model.fbs import TodoListApplicationContext
+import PySide2.QtWidgets as QtWidgets
 
 if __name__ == "__main__":
 	# setup app
 	fbs = TodoListApplicationContext()
-	core.fbs = fbs
-	# setup Qt app for ui
-	fbs.app.setApplicationName("TodoList")
+	try:
+		import core
+		from service.configurationService import ConfigurationService
+		from service.dataListModelService import DataListModelFolderItemService
+		from service.saveListModelService import SaveListModelFolderItemService
+		from widget.mainWindow import MainWindow
 
-	# setup ui
-	mainWindow = MainWindow()
-	mainQss = fbs.qss('style.qss')
-	if mainQss is not None:
-		mainWindow.setStyleSheet(mainQss)
-	else:
-		log.warning('Main qss is not loaded successfully')
+		# initialize services
+		saveListService = SaveListModelFolderItemService()
+		saveListService.saveListModelService().setPath(fbs.fileListPath)
+		dataListService = DataListModelFolderItemService()
+		dataListService.dataListModelService().setPath(fbs.filePath)
 
-	mainWindow.show()
+		confService = ConfigurationService()
+		confService.configuration().setPath(fbs.conf)
+		confService.configuration().read()
 
-	sys.exit(fbs.app.exec_())
+		core.fbs = fbs
+		# setup Qt app for ui
+		fbs.app.setApplicationName("TodoList")
 
-"""
+		# setup ui
+		mainWindow = MainWindow()
+		mainQss = fbs.qss('style.qss')
+		if mainQss is not None:
+			mainWindow.setStyleSheet(mainQss)
+		else:
+			log.warning('Main qss is not loaded successfully')
 
-<key>NSPrincipalClass</key>
-<string>NSApplication</string>
-<key>NSHighResolutionCapable</key>
-<string>True</string>
-
-"""
+		mainWindow.show()
+	except Exception as e:
+		QtWidgets.QMessageBox.warning(None, 'Unexpected Error is occurred', str(e))
+		exit(-1)
+	try:
+		sys.exit(fbs.app.exec_())
+	except Exception as e:
+		QtWidgets.QMessageBox.warning(None, 'Unexpected runtime Error is occurred', str(e))
+		exit(-1)

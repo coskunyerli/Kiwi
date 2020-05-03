@@ -1,32 +1,17 @@
-import json
 import os
-
-import core
 from PySide2 import QtCore, QtGui, QtWidgets
 
-from enums import FileType
+from service.saveListModelService import SaveListModelFolderItemService
 from widget.mainWidget import MainWidget
-from itemmodel.fileListModel import FileListItem, FolderListItem
-from path import fileListPath, filePath, filesPath
 
 
-class MainWindow(QtWidgets.QMainWindow):
+class MainWindow(QtWidgets.QMainWindow, SaveListModelFolderItemService):
 	def __init__(self, parent = None):
 		super(MainWindow, self).__init__(parent)
 		self.resize(800, 600)
-		self.filename = os.path.join(os.getcwd(), 'untitled.txt')
-		self.confFileList = self.readConfFile()
-		if self.confFileList is None:
-			self.confFileList = {'patterns': []}
-
-		if not os.path.isdir(filePath):
-			os.makedirs(filePath)
-		if not os.path.isdir(filesPath):
-			os.makedirs(filesPath)
 
 		root = self.readFileList()
-		self.mainWidget = MainWidget(self.confFileList, root, self)
-		self.editor = self.mainWidget.editor
+		self.mainWidget = MainWidget(root, self)
 		self.setting = QtCore.QSettings(QtCore.QSettings.NativeFormat, QtCore.QSettings.UserScope, "TodoList", "todo")
 		self.setupEditor()
 		self.setupFileMenu()
@@ -35,50 +20,33 @@ class MainWindow(QtWidgets.QMainWindow):
 		self.setWindowTitle('TodoList')
 		self.readSetting()
 		self.initSignalsAndSlots()
+		self.initShortcuts()
 		self.initialize()
 		self.visible = False
 
 
-	def readConfFile(self):
-		confFile = open(core.fbs.conf, 'r')
-		try:
-			config = json.load(confFile)
-		except:
-			confFile.close()
-			return None
-		return config
-
-
 	def readFileList(self):
-		try:
-			try:
-				fileListFile = open(fileListPath, 'r')
-				fileList = json.loads(fileListFile.read())
-			except Exception as e:
-				print('Json Loading Error', str(e))
-				fileList = {'filename': filesPath, 'title': '/', 'files': []}
-			rootFolder = FolderListItem(fileList['filename'], fileList['title'], None)
-			self._readFileList(rootFolder, fileList['files'])
-			return rootFolder
-		except Exception as e:
-			print('Process Error', str(e))
-			return None
+		rootFolder = self.saveListModelService().load()
+		return rootFolder
 
 
-	def _readFileList(self, folder, json):
-		for file in json:
-			if file['type'] == FileType.FILE:
-				folder.fileListModel.insertData(
-						FileListItem(file.get('filename'), file.get('title'), lastUpdate = file.get('lastUpdate'),
-									 isFixed = file.get('isFixed', False)))
-			elif file['type'] == FileType.FOLDER:
-				subFolder = FolderListItem(file['filename'], file['title'], folder, isFixed = file.get('isFixed'))
-				folder.fileListModel.insertData(subFolder)
-				self._readFileList(subFolder, file['files'])
+	def initShortcuts(self):
+		self.closeAppShortcut = QtWidgets.QShortcut(self)
+		self.closeAppShortcut.setContext(QtCore.Qt.ApplicationShortcut)
+		self.closeAppShortcut.setKey(QtGui.QKeySequence(QtCore.Qt.Key_Escape))
+		self.closeAppShortcut.activated.connect(self.close)
 
 
 	def initSignalsAndSlots(self):
-		self.editor.document().modificationChanged.connect(self.updateMainWindowTitle)
+		self.mainWidget.fileListView.currentIndexChanged.connect(self.updateMainWindowTitle)
+		self.mainWidget.fileListModel.dataChanged.connect(self.saveFileModel)
+		self.mainWidget.fileListModel.rowsInserted.connect(self.saveFileModel)
+		self.mainWidget.fileListModel.rowsRemoved.connect(self.saveFileModel)
+		self.mainWidget.fileListModel.rowsMoved.connect(self.saveFileModel)
+
+
+	def saveFileModel(self):
+		self.saveListModelService().save(self.mainWidget.fileListModel.rootFolder())
 
 
 	def initialize(self):
@@ -90,8 +58,9 @@ class MainWindow(QtWidgets.QMainWindow):
 		font.setFamily('Menlo')
 		font.setFixedPitch(True)
 		font.setPointSize(12)
-		self.editor.setFont(font)
 
+
+	# self.mainWidget.editor.setFont(font)
 
 	def setupFileMenu(self):
 		fileMenu = QtWidgets.QMenu('File', self)
@@ -108,12 +77,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
 		fileMenu.addAction(action)
 		fileMenu.addAction(actionFolder)
-
-		action = QtWidgets.QAction(self)
-		action.triggered.connect(self.mainWidget.showSearch)
-		action.setShortcut(QtCore.Qt.CTRL + QtCore.Qt.Key_F)
-		action.setText("Search")
-		fileMenu.addAction(action)
 		fileMenu.addSeparator()
 		action = QtWidgets.QAction(self)
 		action.triggered.connect(self.mainWidget.openPreferences)
@@ -123,7 +86,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
 	def closeEvent(self, event):
-		self.mainWidget.titleNameChanged()
 		self.saveSetting()
 		super(MainWindow, self).closeEvent(event)
 
@@ -148,30 +110,36 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
 	def readSetting(self):
+		return
 		path = self.setting.value('currentPath', '')
-		list_ = path.split('/')
-		filename = filesPath
-		for folder in list_:
-			filename = os.path.join(filename, folder)
-			index = self.mainWidget.currentFolder.fileListModel.getIndex(filename)
-			if index == -1:
-				continue
-			folder = self.mainWidget.currentFolder.fileListModel.getItem(index)
-			if isinstance(folder, FolderListItem):
-				self.mainWidget.changeFolder(folder)
-			else:
-				self.mainWidget.loadFile(self.mainWidget.currentFolder.fileListModel.index(index))
 
+
+	# list_ = path.split('/')
+	# filename = filesPath
+	# for folder in list_:
+	# 	filename = os.path.join(filename, folder)
+	# 	index = self.mainWidget.currentFolder.fileListModel.getIndex(filename)
+	# 	if index == -1:
+	# 		continue
+	# 	folder = self.mainWidget.currentFolder.fileListModel.getItem(index)
+	# 	if isinstance(folder, FolderListItem):
+	# 		self.mainWidget.changeFolder(folder)
+	# 	else:
+	# 		self.mainWidget.loadFile(self.mainWidget.currentFolder.fileListModel.index(index))
 
 	def saveSetting(self):
-		folder = self.mainWidget.currentFolder
-		path = os.path.join(folder.path(),
-							os.path.basename(folder.currentFilePath) if folder.currentFilePath is not None else '')
-		self.setting.setValue('currentPath', path)
+		return
 
 
-	def updateMainWindowTitle(self, change):
-		if change and self.windowTitle().find('*') == -1:
-			self.setWindowTitle('%s*' % self.windowTitle())
-		elif not change and self.windowTitle().find('*') != -1:
-			self.setWindowTitle('%s' % self.windowTitle()[:-1])
+	# folder = self.mainWidget.currentFolder
+	# path = os.path.join(folder.path(),
+	# 					os.path.basename(folder.currentFilePath) if folder.currentFilePath is not None else '')
+	# self.setting.setValue('currentPath', path)
+
+	def updateMainWindowTitle(self, newIndex):
+		return
+		if newIndex.isValid() is False:
+			listModelFileItem = self.mainWidget.fileListModel.currentFolder()
+		else:
+			listModelFileItem = newIndex.data(QtCore.Qt.UserRole)
+		self.setWindowTitle(listModelFileItem.path())
