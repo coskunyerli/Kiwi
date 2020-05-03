@@ -1,0 +1,7 @@
+#breadCrumbItemText{
+color:white;
+
+}
+BreadCrumb{
+border-bottom:1px solid rgb(31, 32, 35);
+}
