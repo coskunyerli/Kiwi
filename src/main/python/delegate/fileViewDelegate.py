@@ -13,12 +13,20 @@ class FileViewDelegate(QtWidgets.QStyledItemDelegate):
 
 	def paint(self, painter, option, index):
 		pixmap = index.model().data(index, role = QtCore.Qt.DecorationRole).pixmap(QtCore.QSize(40, 40))
-		data = index.internalPointer()
+		dataArr = index.data()
+		displayName = dataArr[2]
+		isFixed = dataArr[3]
+		lastUpdate = dataArr[4]
+		isLocked = dataArr[5]
+		dataType = dataArr[6]
+		childCount = dataArr[7]
+
 		painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
 		rect = option.rect
 
 		leftMargin = 16
-		lineRect = QtCore.QRect(QtCore.QPoint(leftMargin, rect.bottom()), QtCore.QSize(rect.width(), 1))
+		lineRect = QtCore.QRect(QtCore.QPoint(leftMargin, rect.bottom()),
+								QtCore.QSize(rect.width() - 2 * leftMargin, 1))
 		painter.fillRect(lineRect, QtGui.QColor('#45464A'))
 
 		if option.state & QtWidgets.QStyle.State_HasFocus:
@@ -39,31 +47,35 @@ class FileViewDelegate(QtWidgets.QStyledItemDelegate):
 		painter.setFont(font)
 		fontMetric = painter.fontMetrics()
 
-		if data.type == FileType.FOLDER:
+		if dataType == FileType.FOLDER:
 
-			text = '%d Items' % data.fileCount()
+			text = '%d Items' % childCount
 			folderItemRect = QtCore.QRect(
 					rect.bottomRight() - QtCore.QPoint(fontMetric.width(text) + 4, fontMetric.height() + 4),
 					QtCore.QSize(fontMetric.width(text), fontMetric.height()))
 
 			painter.drawText(folderItemRect, QtCore.Qt.AlignLeft, text)
 
-		elif data.type == FileType.FILE:
-			if data.lastUpdate is not None:
+		elif dataType == FileType.FILE:
+			if lastUpdate is not None:
+				lastUpdateInString = lastUpdate.strftime("%Y-%m-%d %H:%M")
+				lastUpdateWidth = fontMetric.width(lastUpdateInString)
 				updateRect = QtCore.QRect(
-						rect.bottomRight() - QtCore.QPoint(fontMetric.width(data.lastUpdate) + 4,
+						rect.bottomRight() - QtCore.QPoint(lastUpdateWidth + 4,
 														   fontMetric.height() + 4),
-						QtCore.QSize(fontMetric.width(data.lastUpdate), fontMetric.height()))
-				painter.drawText(updateRect, QtCore.Qt.AlignLeft, data.lastUpdate)
+						QtCore.QSize(lastUpdateWidth, fontMetric.height()))
+				painter.drawText(updateRect, QtCore.Qt.AlignLeft, lastUpdateInString)
 
 		painter.restore()
 
+		fontMetric = painter.fontMetrics()
 		painter.setPen(QtGui.QColor('#D3D7E3'))
-		textRect = rect.adjusted(iconRect.right() + 8, 0, 0, 0)
-		painter.drawText(textRect, QtCore.Qt.AlignVCenter, index.model().data(index))
+		textRect = QtCore.QRect(iconRect.right() + 8, rect.top(), rect.right() - (iconRect.right() + 8), rect.height())
+		elidedDisplayText = fontMetric.elidedText(displayName, QtCore.Qt.ElideRight, textRect.width())
+		painter.drawText(textRect, QtCore.Qt.AlignVCenter, elidedDisplayText)
 
 		if not index.model().flags(index) & ItemFlags.ItemIsSoftLink:
-			if data.isFixed:
+			if isFixed:
 				pinPixmap = QtGui.QPixmap(core.fbs.icons('pin.png'))
 
 				pinPixmapSize = pinPixmap.size() / 3.5
@@ -71,17 +83,18 @@ class FileViewDelegate(QtWidgets.QStyledItemDelegate):
 						rect.topRight() + QtCore.QPoint(-pinPixmapSize.width() - 4, 4),
 						pinPixmapSize)
 				painter.drawPixmap(pinRect, pinPixmap, pinPixmap.rect())
-			if data.isLocked is not None:
-				if data.isLocked:
-					lockPixmap = QtGui.QPixmap(core.fbs.icons('lock.png'))
-				else:
-					lockPixmap = QtGui.QPixmap(core.fbs.icons('lock-open.png'))
-				lockPixmapSize = lockPixmap.size() / 4.5
-				lockRect = QtCore.QRect(
-						rect.topLeft() + QtCore.QPoint(4, 4),
-						lockPixmapSize)
-				painter.drawPixmap(lockRect, lockPixmap, lockPixmap.rect())
 
+
+	# if isLocked is not None:
+	# if isLocked:
+	# 	lockPixmap = QtGui.QPixmap(core.fbs.icons('lock.png'))
+	# else:
+	# 	lockPixmap = QtGui.QPixmap(core.fbs.icons('lock-open.png'))
+	# lockPixmapSize = lockPixmap.size() / 4.5
+	# lockRect = QtCore.QRect(
+	# 		rect.topLeft() + QtCore.QPoint(4, 4),
+	# 		lockPixmapSize)
+	# painter.drawPixmap(lockRect, lockPixmap, lockPixmap.rect())
 
 	def sizeHint(self, option, index):
 		size = super(FileViewDelegate, self).sizeHint(option, index)
