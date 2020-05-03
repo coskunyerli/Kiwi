@@ -1,0 +1,2 @@
+class InvalidListModelItemException(Exception):
+	pass
