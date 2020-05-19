@@ -158,8 +158,14 @@ class BreadCrumbItem(QtWidgets.QFrame):
 
 
 	def dragEnterEvent(self, event):
-		self.dragTimer.start(500)
-		#event.acceptProposedAction()
+		mimeData = event.mimeData()
+		dropIndex = mimeData.colorData()
+		if dropIndex and dropIndex.isValid() is True:
+			self.dragTimer.start(500)
+			event.acceptProposedAction()
+		else:
+			self.dragTimer.stop()
+			event.ignore()
 
 
 	def dragLeaveEvent(self, event):
