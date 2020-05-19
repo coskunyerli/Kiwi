@@ -1,0 +1,118 @@
+#saveSoundButton {
+    border: 1px solid #505050;
+    Text-align: left;
+    padding-left: 8px;
+    padding-right: 8px;
+    padding-top: 4px;
+    padding-bottom: 4px;
+}
+
+#preferencesInfoLabel {
+    padding-left: 8px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    font-weight: bold;
+    border-bottom: 1px solid #505050;
+}
+
+#Preferences {
+    background-color: #404040;
+}
+
+FontSelectionWidget QLineEdit {
+    background-color: rgb(62, 67, 76);
+}
+
+FontSelectionWidget QListWidget {
+    background-color: rgb(62, 67, 76);
+}
+
+FontSelectionWidget QListWidget::item:selected{
+    border:1px solid rgb(225, 125, 20);
+    color: white;
+}
+
+FontWidget QSpinBox, FontWidget QDoubleSpinBox {
+    background-color: rgb(100, 100, 100);
+}
+
+FontWidget QSpinBox:up-button, FontWidget QDoubleSpinBox:up-button {
+    background-color: rgb(75, 75, 75);
+}
+
+FontWidget QSpinBox:down-button, FontWidget QDoubleSpinBox:down-button {
+    border-top: 1px solid #202020;
+    background-color: rgb(75, 75, 75);
+}
+
+
+FontWidget QSpinBox:up-button::pressed, FontWidget QDoubleSpinBox:up-button::pressed, FontWidget QSpinBox:down-button::pressed, FontWidget QDoubleSpinBox:down-button::pressed {
+    background-color: rgb(50, 50, 50);
+}
+
+#categoryListWidget {
+    background-color: rgb(62, 67, 76);
+    color:white;
+    border-right: 1px solid #303030
+}
+
+#categoryListWidget::item:hover {
+    background: rgb(52, 57, 66);
+}
+
+#categoryListWidget::item:selected {
+    background-color: rgb(225, 125, 20);
+    color: white;
+}
+
+#mainWidget {
+    border-bottom: 1px solid #303030;
+}
+
+QComboBox {
+    height: 22px;
+    padding-top: 1px;
+    padding-bottom: 1px;
+    padding-left: 12px;
+}
+
+QComboBox:item::selected {
+    background-color: #303030;
+}
+
+QComboBox:item {
+    background-color: #404040;
+    height: 22px;
+    border-bottom: 1px solid #303030;
+    padding-left: 16px;
+}
+
+QSpinBox:disabled {
+    background-color: #353535;
+}
+
+#modeNameListWidget {
+    background-color: #404040;
+    border: 1px solid #303030;
+    border-left: none;
+    border-bottom: none;
+}
+
+#transitionListWidget, #modeListView {
+    background-color: #404040;
+    border: 1px solid #303030;
+    border-bottom: none;
+}
+
+#transitionListWidget:item, #modeListView:item, #modeNameListWidget:item{
+    color:white;
+}
+
+
+#transitionListWidget:item::hover, #modeListView:item::hover, #modeNameListWidget:item::hover {
+    background-color: #303030;
+}
+
+#transitionListWidget:item::selected, #modeListView:item::selected, #modeNameListWidget:item::selected {
+    background-color: rgb(225, 125, 20);
+}

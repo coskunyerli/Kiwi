@@ -8,6 +8,8 @@ from widget.mainWidget import MainWidget
 class MainWindow(QtWidgets.QMainWindow, SaveListModelFolderItemService):
 	def __init__(self, parent = None):
 		super(MainWindow, self).__init__(parent)
+		self.visible = False
+
 		self.resize(800, 600)
 
 		root = self.readFileList()
@@ -18,11 +20,11 @@ class MainWindow(QtWidgets.QMainWindow, SaveListModelFolderItemService):
 		self.setupHelpMenu()
 		self.setCentralWidget(self.mainWidget)
 		self.setWindowTitle('TodoList')
-		self.readSetting()
 		self.initSignalsAndSlots()
 		self.initShortcuts()
 		self.initialize()
-		self.visible = False
+
+		self.readSetting()
 
 
 	def readFileList(self):
@@ -38,15 +40,14 @@ class MainWindow(QtWidgets.QMainWindow, SaveListModelFolderItemService):
 
 
 	def initSignalsAndSlots(self):
-		self.mainWidget.fileListView.currentIndexChanged.connect(self.updateMainWindowTitle)
-		self.mainWidget.fileListModel.dataChanged.connect(self.saveFileModel)
-		self.mainWidget.fileListModel.rowsInserted.connect(self.saveFileModel)
-		self.mainWidget.fileListModel.rowsRemoved.connect(self.saveFileModel)
-		self.mainWidget.fileListModel.rowsMoved.connect(self.saveFileModel)
+		self.mainWidget.fileTreeModel.dataChanged.connect(self.saveFileModel)
+		self.mainWidget.fileTreeModel.rowsInserted.connect(self.saveFileModel)
+		self.mainWidget.fileTreeModel.rowsRemoved.connect(self.saveFileModel)
+		self.mainWidget.fileTreeModel.rowsMoved.connect(self.saveFileModel)
 
 
 	def saveFileModel(self):
-		self.saveListModelService().save(self.mainWidget.fileListModel.rootFolder())
+		self.saveListModelService().save(self.mainWidget.fileTreeModel.rootFolder())
 
 
 	def initialize(self):
@@ -110,36 +111,28 @@ class MainWindow(QtWidgets.QMainWindow, SaveListModelFolderItemService):
 
 
 	def readSetting(self):
-		return
-		path = self.setting.value('currentPath', '')
+		folderID = self.setting.value('currentFolderID', '')
+		itemID = self.setting.value('currentItemID', '')
+		if folderID is not None:
+			currentFolderArray = self.mainWidget.fileTreeModel.find(lambda item: item.id() == folderID)
+			if currentFolderArray:
+				currentFolder = currentFolderArray[0]
+				self.mainWidget.fileListProxyModel.setCurrentFolder(currentFolder)
+				self.mainWidget.breadCrumb.setPath(currentFolder)
+				if itemID is not None:
+					currentItemArray = currentFolder.find(lambda item: item.id() == itemID)
+					if currentItemArray:
+						currentItem = currentItemArray[0]
+						itemChildNumber = currentItem.childNumber()
+						if itemChildNumber is not None:
+							currentItemIndex = self.mainWidget.fileListProxyModel.index(itemChildNumber)
+							self.mainWidget.fileListView.setCurrentIndex(currentItemIndex)
 
-
-	# list_ = path.split('/')
-	# filename = filesPath
-	# for folder in list_:
-	# 	filename = os.path.join(filename, folder)
-	# 	index = self.mainWidget.currentFolder.fileListModel.getIndex(filename)
-	# 	if index == -1:
-	# 		continue
-	# 	folder = self.mainWidget.currentFolder.fileListModel.getItem(index)
-	# 	if isinstance(folder, FolderListItem):
-	# 		self.mainWidget.changeFolder(folder)
-	# 	else:
-	# 		self.mainWidget.loadFile(self.mainWidget.currentFolder.fileListModel.index(index))
 
 	def saveSetting(self):
-		return
-
-
-	# folder = self.mainWidget.currentFolder
-	# path = os.path.join(folder.path(),
-	# 					os.path.basename(folder.currentFilePath) if folder.currentFilePath is not None else '')
-	# self.setting.setValue('currentPath', path)
-
-	def updateMainWindowTitle(self, newIndex):
-		return
-		if newIndex.isValid() is False:
-			listModelFileItem = self.mainWidget.fileListModel.currentFolder()
-		else:
-			listModelFileItem = newIndex.data(QtCore.Qt.UserRole)
-		self.setWindowTitle(listModelFileItem.path())
+		folder = self.mainWidget.fileListProxyModel.sourceFolder()
+		self.setting.setValue('currentFolderID', folder.id())
+		currentItemIndex = self.mainWidget.fileListView.currentIndex()
+		if currentItemIndex.isValid():
+			itemID = currentItemIndex.data()[0]
+			self.setting.setValue('currentItemID', itemID)

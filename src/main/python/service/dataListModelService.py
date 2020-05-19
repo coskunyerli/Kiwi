@@ -24,9 +24,6 @@ class __DataListModelFolderItemService__(object):
 			with open(filename, 'w') as file:
 				jsonInString = json.dumps(dict_)
 				file.write(jsonInString)
-
-			lastUpdateTime = os.path.getmtime(filename)
-			listModelFileItem.lastUpdate = datetime.datetime.fromtimestamp(lastUpdateTime)
 		else:
 			log.warning('Path is not valid while saving in SaveListModelFolderItemService')
 

@@ -6,12 +6,42 @@ from enums import ItemFlags
 
 class ListView(QtWidgets.QListView):
 	currentIndexChanged = QtCore.Signal(QtCore.QModelIndex)
+	dragTimeout = QtCore.Signal(QtCore.QModelIndex)
 
 
 	def __init__(self, parent = None):
 		super(ListView, self).__init__(parent)
 		self.setAcceptDrops(True)
 		self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+		self.timerTime = 500
+		self.dragTimer = QtCore.QTimer(self)
+		self.dragTimer.setSingleShot(True)
+		self.dragTimer.timeout.connect(self.clickUsingDragDrop)
+		self.__currentDragIndex = QtCore.QModelIndex()
+
+
+	def clickUsingDragDrop(self):
+		index = self.__currentDragIndex
+		self.__currentDragIndex = QtCore.QModelIndex()
+		self.dragTimeout.emit(index)
+
+
+	def dragEnterEvent(self, event):
+		self.__currentDragIndex = self.indexAt(event.pos())
+		self.dragTimer.start(self.timerTime)
+		super(ListView, self).dragEnterEvent(event)
+
+
+	def dragLeaveEvent(self, event):
+		self.dragTimer.stop()
+		self.__currentDragIndex = QtCore.QModelIndex()
+		super(ListView, self).dragLeaveEvent(event)
+
+
+	def dropEvent(self, event):
+		self.dragTimer.stop()
+		self.__currentDragIndex = QtCore.QModelIndex()
+		super(ListView, self).dropEvent(event)
 
 
 	def currentChanged(self, current, old):
@@ -21,15 +51,23 @@ class ListView(QtWidgets.QListView):
 
 	def dragMoveEvent(self, event):
 		mimeData = event.mimeData()
-		dropObject = mimeData.colorData()
-		if dropObject:
+		dropIndex = mimeData.colorData()
+		if dropIndex and dropIndex.isValid() is True:
 			hoverIndex = self.indexAt(event.pos())
-			if hoverIndex.isValid() and hoverIndex.data(QtCore.Qt.UserRole) == dropObject:
-				return super(ListView, self).dragMoveEvent(event)
+			dataIsEqual = hoverIndex.data(QtCore.Qt.UserRole) == dropIndex.data(QtCore.Qt.UserRole)
+			if hoverIndex.isValid() and dataIsEqual is True:
+				self.dragTimer.stop()
+				self.__currentDragIndex = QtCore.QModelIndex()
+				event.ignore()
 			else:
-				event.acceptProposedAction()
+				super(ListView, self).dragMoveEvent(event)
+
+			if hoverIndex != self.__currentDragIndex and dataIsEqual is False:
+				self.__currentDragIndex = hoverIndex
+				self.dragTimer.start(self.timerTime)
+
 		else:
-			return super(ListView, self).dragMoveEvent(event)
+			super(ListView, self).dragMoveEvent(event)
 #
 #
 # def rename(self):

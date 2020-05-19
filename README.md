@@ -8,11 +8,10 @@ This is a todolist application.
 ![alt text](image3.png)
 
 ## Requirement
-- Python
+- Python 3
 - PySide2 == 5.11.0
 
 ## Install
-[Python 2.7](https://www.python.org/downloads/)
 
 ```
 pip install PySide2==5.11.0

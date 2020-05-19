@@ -23,6 +23,18 @@ class ListModelFileItem(object):
 		self.tags = set()
 
 
+	def updateLastUpdateDate(self):
+		self.lastUpdate = datetime.datetime.now()
+
+
+	def setTags(self, tags):
+		self.tags = tags
+
+
+	def childCount(self):
+		return 0
+
+
 	def isRead(self):
 		return self.__isRead
 
@@ -140,8 +152,53 @@ class ListModelFolderItem(ListModelFileItem):
 		self.type = FileType.FOLDER
 
 
-	def contains(self, child):
-		return child in self.childItems
+	def find(self, func, recursive = False):
+		items = []
+		if recursive is False:
+			for child in self.childItems:
+				if func(child) is True:
+					items.append(child)
+		else:
+			self.__find(self, func, items)
+		return items
+
+
+	def __find(self, folder, func, all):
+		folderItems = []
+		for childItem in folder.childItems:
+			if childItem.type == FileType.FOLDER:
+				folderItems.append(childItem)
+			if func(childItem) is True:
+				all.append(childItem)
+		for folderItem in folderItems:
+			self.__find(folderItem, func, all)
+
+		return all
+
+
+	def contains(self, func, recursive = False):
+		if recursive is False:
+			for child in self.childItems:
+				if func(child):
+					return True
+			return False
+		else:
+			return self.__contains(self, func)
+
+
+	def __contains(self, folder, func):
+		folderItems = []
+		for childItem in folder.childItems:
+			if childItem.type == FileType.FOLDER:
+				folderItems.append(childItem)
+			else:
+				if func(childItem):
+					return True
+		for folderItem in folderItems:
+			res = self.__contains(folderItem, func)
+			if res is True:
+				return True
+		return False
 
 
 	def insert(self, child, index):
@@ -161,10 +218,7 @@ class ListModelFolderItem(ListModelFileItem):
 
 
 	def childCount(self):
-		if self.parent() is not None and self.parent() in self.childItems:
-			return len(self.childItems) - 1
-		else:
-			return len(self.childItems)
+		return len(self.childItems)
 
 
 	def isEmpty(self):
@@ -195,3 +249,13 @@ class ListModelFolderItem(ListModelFileItem):
 class ListModelSoftLinkFolderItem(ListModelFolderItem):
 	def __init__(self, id, name, parent, displayName = None, isFixed = False):
 		super(ListModelSoftLinkFolderItem, self).__init__(id, name, parent, displayName, isFixed)
+
+
+class MaskFolderItem(ListModelFolderItem):
+	def __init__(self, source, name, parent, displayName = None, isFixed = False):
+		super(MaskFolderItem, self).__init__(source.id(), name, parent, displayName = displayName, isFixed = isFixed)
+		self.__source = source
+
+
+	def sourceFolder(self):
+		return self.__source

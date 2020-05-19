@@ -7,6 +7,31 @@ class DataModel(QtCore.QAbstractListModel):
 	def __init__(self, parent = None):
 		super(DataModel, self).__init__(parent)
 		self.__listModelFileItem = None
+		self.__sourceModel = None
+
+
+	# todo silme ekleme move işleri source model de olacak burada değil.
+	# todo data da source model de olacak
+
+	def setSourceModel(self, sourceModel):
+		if self.__sourceModel is not None:
+			pass
+
+		self.__sourceModel = sourceModel
+
+
+	# todo: burada sinyal bağlama olacak
+
+	def mapFromSource(self, sourceIndex):
+		pass
+
+
+	def mapToSource(self, index):
+		pass
+
+
+	def sourceModel(self):
+		return self.__sourceModel
 
 
 	def beginEditData(self, index):
@@ -64,7 +89,8 @@ class DataModel(QtCore.QAbstractListModel):
 
 	def insertData(self, data):
 		self.beginInsertRows(QtCore.QModelIndex(), self.rowCount(), self.rowCount())
-		self.__listModelFileItem.appendData(data)
+		self.listModelFileItem().appendData(data)
+		self.listModelFileItem().updateLastUpdateDate()
 		self.endInsertRows()
 
 

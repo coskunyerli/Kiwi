@@ -58,7 +58,9 @@ class __SaveListModelFolderItemService__(object):
 																				 datetime.datetime.now().timestamp())),
 													  isFixed = childrenInJson.get('isFixed', False),
 													  isLocked = childrenInJson.get('isLocked', False))
-				listModelFileItem.tags = set(filter(lambda item: item != '', childrenInJson.get('tags', '').split(';')))
+				listModelFileItem.setTags(
+						set(filter(lambda item: item != '', childrenInJson.get('tags', '').split(';'))))
+
 				folder.append(listModelFileItem)
 				maxID[0] = max(maxID[0], childrenInJson['id'])
 			elif childrenInJson['type'] == FileType.FOLDER:

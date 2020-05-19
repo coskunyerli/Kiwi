@@ -1,4 +1,5 @@
-import sys, inspect
+import datetime
+import sys, inspect, math
 
 
 def increment_char(c):
@@ -59,3 +60,38 @@ def binarySearch(arr, cmp):
 
 
 def cmp(a, b):    return (a > b) - (a < b)
+
+
+def passedTime(time, suffix = None):
+	if suffix is None:
+		suffix = ['just', ' s', ' mins', ' hrs', ' days', ' m', ' y']
+
+	timeInMili = time.timestamp() * 1000
+	nowInMili = datetime.datetime.now().timestamp() * 1000
+
+	diffInMiliSecond = nowInMili - timeInMili
+	second = diffInMiliSecond / 1000
+	if second <= 0:
+		return suffix[0]
+
+	minutes = second / 60
+	if minutes < 1:
+		return f'{math.floor(diffInMiliSecond / 1000)}{suffix[1]}'
+
+	hour = minutes / 60
+	if hour < 1:
+		return f'{math.floor(second / 60)}{suffix[2]}'
+
+	day = hour / 24
+	if day < 1:
+		return f'{math.floor(minutes / 60)}{suffix[3]}'
+	month = day / 30
+	if month < 1:
+		return f'{math.floor(hour / 24)}{suffix[4]}'
+
+	year = month / 12
+	if year < 1:
+		return f'{math.floor(day / 30)}{suffix[5]}'
+	else:
+		f'{math.floor(year)}{suffix[6]}'
+

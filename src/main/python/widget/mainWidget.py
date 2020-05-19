@@ -18,16 +18,16 @@ from exceptions.invalidListModelItemException import InvalidListModelItemExcepti
 from factory.dataDialogFactory import DataDialogFactory
 from factory.dataFactory import DataFactory
 from itemmodel.dataModel import DataModel
-from itemmodel.listModel import ListModel
+from itemmodel.listTreeModel import ListTreeModel
 from enums import FileType, ItemFlags
 from itemmodel.listModelItem import ListModelFileItem, ListModelFolderItem
+from preferences.storyPreferencesDialogue import Preferences
 from proxy.dataModelProxy import DataModelProxy
-from proxy.searchListModelProxy import SearchListModelProxy
+from proxy.fileListModelProxy import FileListModelProxy
 from service.dataListModelService import DataListModelFolderItemService
 from service.saveListModelService import SaveListModelFolderItemService
 from widget.breadCrumbWidget import BreadCrumb
 from widget.dialog.filePickerDialog import FilePickerDialog
-from widget.dialog.preferencesDialogue import Preferences
 from widget.dialog.textEditorDialog import TextEditorDialog
 from widget.listView import ListView
 
@@ -67,28 +67,31 @@ class Ui_Form(object):
 		self.fileListWidgetLayout.setContentsMargins(0, 0, 0, 0)
 		self.fileListWidgetLayout.setObjectName("verticalLayout_2")
 		self.fileListWidgetLayout.setSpacing(6)
-
-		self.searchWidgetInFileList = QtWidgets.QWidget(self.fileListWidget)
+		self.searchWidgetInFileListWidget = QtWidgets.QWidget(self.fileListWidget)
 		qss = core.fbs.qss('searchWidgetInFileList.qss')
 		if qss is not None:
-			self.searchWidgetInFileList.setStyleSheet(qss)
+			self.searchWidgetInFileListWidget.setStyleSheet(qss)
 		else:
 			log.warning(f'Qss file is not loaded successfully. Filename is "searchLineBoxInFileList.qss"')
 
-		self.searchWidgetInFileList.setObjectName("searchWidgetInFileList")
-		self.searchWidgetInFileListLayout = QtWidgets.QVBoxLayout(self.searchWidgetInFileList)
-		self.searchWidgetInFileListLayout.setContentsMargins(4, 0, 4, 0)
-		self.searchWidgetInFileListLayout.setSpacing(2)
+		self.searchWidgetInFileListWidget.setObjectName("searchWidgetInFileList")
+		self.searchWidgetInFileListLayout = QtWidgets.QHBoxLayout(self.searchWidgetInFileListWidget)
+		self.searchWidgetInFileListLayout.setContentsMargins(4, 0, 0, 0)
+		self.searchWidgetInFileListLayout.setSpacing(6)
 
-		self.searchLineBoxInFileList = QtWidgets.QLineEdit(self.searchWidgetInFileList)
+		self.searchLineBoxInFileList = QtWidgets.QLineEdit(self.searchWidgetInFileListWidget)
 		self.searchLineBoxInFileList.setPlaceholderText('Search')
 		self.searchLineBoxInFileList.setObjectName("searchLineBoxInFileList")
 
-		self.addFileWidget = QtWidgets.QWidget(self.searchWidgetInFileList)
+		self.flattenSearchCheckbox = QtWidgets.QCheckBox(self.searchLineBoxInFileList)
+		self.flattenSearchCheckbox.setToolTip('Recursive Search')
+
+		self.addFileWidget = QtWidgets.QWidget(self.fileListWidget)
 		self.addFileWidget.setObjectName("addFileWidget")
 
-		self.searchWidgetInFileListLayout.addWidget(self.addFileWidget)
 		self.searchWidgetInFileListLayout.addWidget(self.searchLineBoxInFileList)
+		self.searchWidgetInFileListLayout.addWidget(self.flattenSearchCheckbox)
+
 		# self.searchWidgetInFileListLayout.addWidget(self.pathTextLabel)
 
 		self.addFileWidgetLayout = QtWidgets.QHBoxLayout(self.addFileWidget)
@@ -115,12 +118,13 @@ class Ui_Form(object):
 		self.searchLineBoxInFileList.setSizePolicy(sizePolicy)
 		self.addFileWidgetLayout.addWidget(self.newFolderButton)
 
-		self.fileListWidgetLayout.addWidget(self.searchWidgetInFileList)
 		self.fileListView = ListView(self.fileListWidget)
 		delegate = FileViewDelegate(self)
 		self.fileListView.setItemDelegate(delegate)
 		self.fileListView.setObjectName("fileListView")
 
+		self.fileListWidgetLayout.addWidget(self.addFileWidget)
+		self.fileListWidgetLayout.addWidget(self.searchWidgetInFileListWidget)
 		self.fileListWidgetLayout.addWidget(self.fileListView)
 		self.mainWidgetLayout.addWidget(self.fileListWidget)
 
@@ -186,14 +190,13 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 
 		self.setupUi(self)
 
-		self.fileListModel = ListModel()
-		self.fileListModel.setCurrentFolder(root)
+		self.fileTreeModel = ListTreeModel()
+		self.fileTreeModel.setRoot(root)
 
-		self.fileListProxyModel = SearchListModelProxy()
-		self.fileListProxyModel.setFilterCaseSensitivity(QtCore.Qt.CaseInsensitive)
-		self.fileListProxyModel.setSourceModel(self.fileListModel)
-
-		self.dataModel = DataModel(self.fileListModel)
+		self.fileListProxyModel = FileListModelProxy()
+		# self.fileListProxyModel.setFilterCaseSensitivity(QtCore.Qt.CaseInsensitive)
+		self.fileListProxyModel.setSourceModel(self.fileTreeModel)
+		self.dataModel = DataModel(self.fileListProxyModel)
 
 		self.dataProxyModel = DataModelProxy()
 		self.dataProxyModel.setFilterCaseSensitivity(QtCore.Qt.CaseInsensitive)
@@ -244,16 +247,19 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 		self.fileListWidget.setMaximumWidth(200)
 		self.fileListView.setAcceptDrops(True)
 		self.fileListView.setDragEnabled(True)
-		self.breadCrumb.setPath(self.fileListModel.currentFolder())
+		self.breadCrumb.setPath(self.fileListProxyModel.currentFolder())
 
-		if self.fileListModel.isEmpty() is False:
-			self.fileListView.setCurrentIndex(self.fileListModel.index(0))
+		if self.fileListProxyModel.isEmpty() is False:
+			self.fileListView.setCurrentIndex(self.fileListProxyModel.index(0))
+
+		self.flattenSearchCheckbox.setChecked(self.fileListProxyModel.hasRecursiveSearch())
 
 
 	def initSignalsAndSlots(self):
 		self.newFileButton.clicked.connect(self.newFile)
 		self.newFolderButton.clicked.connect(self.newFolder)
 		self.fileListView.currentIndexChanged.connect(self.loadFile)
+		self.fileListView.dragTimeout.connect(self.updateCurrentFolder)
 
 		self.enterFolderShortcut.activated.connect(self.changeNextFolder)
 		self.fileListView.doubleClicked.connect(self.changeNextFolder)
@@ -275,6 +281,12 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 
 		self.dataModel.modelReset.connect(self.updateDataWidget)
 		self.breadCrumb.dropped.connect(self.dropItemToBreadCrumb)
+
+		self.flattenSearchCheckbox.stateChanged.connect(self.updateRecursiveSearchFlag)
+
+
+	def updateRecursiveSearchFlag(self, value):
+		self.fileListProxyModel.setRecursiveSearch(bool(value))
 
 
 	def openData(self, index):
@@ -300,21 +312,28 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 
 
 	def dropItemToBreadCrumb(self, fileItemList, mimeData):
-		self.fileListModel.dropMimeData(mimeData, None, -1, -1, QtCore.QModelIndex())
+		return
+		self.fileListProxyModel.dropMimeData(mimeData, None, -1, -1, QtCore.QModelIndex())
 
 
 	def pinnedListModelFileItem(self):
 		index = self.fileListView.currentIndex()
-		data, old = self.fileListModel.beginEditData(index)
+		data, old = self.fileListProxyModel.beginEditData(index)
 		data.setFixed(not data.isFixed)
 		if data.isFixed:
-			self.fileListModel.moveItem(index.row(), 0)
+			self.fileTreeModel.moveRow(index.parent(), index.row(), index.parent(), 0)
+
+		self.fileListProxyModel.endEditData(index)
 		self.fileListView.update()
 
 
-	def searchFileListView(self, text):
-		self.fileListProxyModel.setFilterRegExp(text)
+	def searchFileListView(self):
+		text = self.searchLineBoxInFileList.text()
+		self.fileListProxyModel.setSearchText(text)
+		return
 
+
+	# self.fileListProxyModel.setFilterRegExp(text)
 
 	def searchDataView(self, text):
 		self.dataProxyModel.setFilterRegExp(text)
@@ -330,8 +349,8 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 		newFile = ListModelFileItem(ListModelFileItem.IDGenerator(), displayName, None, lastUpdate = now)
 		try:
 			self.dataListModelService().save(newFile)
-			i = self.fileListModel.insertData(newFile, 0)
-			index = self.fileListModel.index(i)
+			i = self.fileListProxyModel.insertData(newFile, 0)
+			index = self.fileListProxyModel.index(i)
 			self.fileListView.setCurrentIndex(index)
 		# Save root file into disc
 		except InvalidListModelItemException as e:
@@ -349,8 +368,8 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 
 		newFolder = ListModelFolderItem(ListModelFileItem.IDGenerator(), displayName, None)
 		try:
-			i = self.fileListModel.insertData(newFolder, 0)
-			index = self.fileListModel.index(i)
+			i = self.fileListProxyModel.insertData(newFolder, 0)
+			index = self.fileListProxyModel.index(i)
 			self.fileListView.setCurrentIndex(index)
 		# Save root file into disc
 		except InvalidListModelItemException as e:
@@ -393,21 +412,21 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 		listFileItem = self.dataModel.listModelFileItem()
 		childNumber = listFileItem.childNumber()
 
-		index = self.fileListModel.index(childNumber)
-		_, _ = self.fileListModel.beginEditData(index)
+		index = self.fileListProxyModel.index(childNumber)
+		_, _ = self.fileListProxyModel.beginEditData(index)
 		self.dataModel.insertData(dataModelItem)
 		self.dataListModelService().save(self.dataModel.listModelFileItem())
-		self.fileListModel.endEditData(index)
+		self.fileListProxyModel.endEditData(index)
 
 
 	def changePrevFolder(self):
-		currentFolder = self.fileListModel.currentFolder()
+		currentFolder = self.fileListProxyModel.currentFolder()
 		parent = currentFolder.parent()
 		if parent is not None:
 			childNumber = currentFolder.childNumber()
 			if childNumber is not None:
 				self.changeFolder(parent)
-				self.fileListView.setCurrentIndex(self.fileListModel.index(childNumber))
+				self.fileListView.setCurrentIndex(self.fileListProxyModel.index(childNumber))
 
 
 	def changeNextFolder(self):
@@ -419,7 +438,7 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 
 	def changeFolder(self, listModelFolderItem):
 		if isinstance(listModelFolderItem, ListModelFolderItem):
-			self.fileListModel.setCurrentFolder(listModelFolderItem)
+			self.fileListProxyModel.setCurrentFolder(listModelFolderItem)
 			self.updateBreadCrumb()
 
 
@@ -429,9 +448,16 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 
 
 	def updateBreadCrumb(self):
-		listModelFileItem = self.fileListModel.currentFolder()
+		listModelFileItem = self.fileListProxyModel.sourceFolder()
 		if listModelFileItem.type == FileType.FOLDER:
 			self.breadCrumb.setPath(listModelFileItem)
+
+
+	def updateCurrentFolder(self, index):
+		if index.isValid() is True:
+			fileListItem = index.data(QtCore.Qt.UserRole)
+			if fileListItem.type == FileType.FOLDER:
+				self.changeFolder(fileListItem)
 
 
 	def loadFile(self, index):
@@ -448,6 +474,7 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 
 	def deleteListModelFileItem(self):
 		index = self.fileListView.currentIndex()
+
 		if index.isValid() is False:
 			return
 		if self.fileListView.model().flags(index) & ItemFlags.ItemIsSoftLink:
@@ -456,12 +483,11 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 											   QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
 		if result == QtWidgets.QMessageBox.No:
 			return
-
-		if self.fileListModel.flags(index) & ItemFlags.ItemIsDeletable:
-			listModelFileItem = self.fileListModel.deleteRow(index)
+		if self.fileListProxyModel.flags(index) & ItemFlags.ItemIsDeletable:
+			listModelFileItem = self.fileListProxyModel.deleteRow(index)
 			self.dataListModelService().deleteListModelFileItem(listModelFileItem)
-			if self.fileListModel.isEmpty() is False:
-				index = self.fileListModel.index(0)
+			if self.fileListProxyModel.isEmpty() is False:
+				index = self.fileListProxyModel.index(0)
 				self.fileListView.setCurrentIndex(index)
 
 
@@ -481,20 +507,18 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 		if index.isValid():
 			data = index.data(QtCore.Qt.UserRole)
 			listModelFileItem = self.dataModel.listModelFileItem()
-			fileListIndex = self.fileListModel.index(listModelFileItem.childNumber())
+			fileListIndex = self.fileListProxyModel.index(listModelFileItem.childNumber())
 			newText, result = QtWidgets.QInputDialog.getText(self, 'Rename File', 'New Data Name', text = data.name)
 			if result and fileListIndex.isValid():
-				self.fileListModel.beginEditData(fileListIndex)
+				self.fileListProxyModel.beginEditData(fileListIndex)
 				self.dataModel.beginEditData(index)
 				data.setName(newText)
 				self.dataModel.endEditData(index)
-				self.fileListModel.endEditData(fileListIndex)
+				self.fileListProxyModel.endEditData(fileListIndex)
 
 
 	def openPreferences(self):
-		return
-		preferences = Preferences(self, preferences = self.styleItems)
-		preferences.acceptPreferences.connect(self.closePreferences)
+		preferences = Preferences(self, None)
 		preferences.open()
 
 
@@ -555,7 +579,7 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 		passwordItem = ''
 		addTag = ''
 		if index.isValid():
-			model = self.fileListModel
+			model = self.fileListProxyModel
 			dataList = index.data()
 			isFixed = dataList[3]
 			isLocked = dataList[5]
@@ -596,7 +620,7 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 			self.pinnedListModelFileItem()
 
 		elif action == addTag:
-			self.addTaListModelFileItem()
+			self.addTagListModelFileItem()
 
 
 	# elif action == passwordItem:
@@ -604,7 +628,7 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 
 	def renameListModelFileItem(self):
 		index = self.fileListView.currentIndex()
-		model = self.fileListModel
+		model = self.fileListProxyModel
 		newText, result = QtWidgets.QInputDialog.getText(self, 'Rename File', 'New file name', text = index.data()[1])
 		if result:
 			data, old = model.beginEditData(index)
@@ -613,9 +637,9 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 			model.endEditData(index)
 
 
-	def addTaListModelFileItem(self):
+	def addTagListModelFileItem(self):
 		index = self.fileListView.currentIndex()
-		model = self.fileListModel
+		model = self.fileListProxyModel
 		listModelFileItem = index.data(QtCore.Qt.UserRole)
 		text = ';'.join(listModelFileItem.tags)
 		newTagText, result = QtWidgets.QInputDialog.getText(self, 'Tags', 'New tags', text = text)
