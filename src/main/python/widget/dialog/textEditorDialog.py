@@ -63,7 +63,7 @@ class TextEditorDialog(QtWidgets.QDialog, ConfigurationService):
 			if self.currentTextData is None:
 				filename, result = QtWidgets.QInputDialog.getText(self, 'Save File', 'Enter a filename to save',
 																  text = 'Text')
-				filenameArray = filename.lower().strip(' ') if ' ' in filename else [filename.lower()]
+				filenameArray = filename.split(' ')
 				filename = '_'.join(filenameArray)
 				now = datetime.datetime.now().timestamp()
 				path = os.path.join(core.fbs.filesPath, f'{filename}_{int(now)}.json')
