@@ -68,7 +68,6 @@ class FileListModelProxy(QtCore.QAbstractProxyModel):
 
 	def setCurrentFolder(self, folder):
 		if folder is not None and folder.type == FileType.FOLDER:
-			self.beginResetModel()
 			maskFolder = MaskFolderItem(folder, folder.name(), None, folder.displayName, folder.isFixed)
 			for child in folder.childItems:
 				maskFolder.append(child)
@@ -77,7 +76,7 @@ class FileListModelProxy(QtCore.QAbstractProxyModel):
 				self.setSearchText(self.searchText())
 			else:
 				self.__updateIndices()
-			self.endResetModel()
+			self.layoutChanged.emit()
 
 
 	def mimeData(self, indices):
@@ -217,7 +216,7 @@ class FileListModelProxy(QtCore.QAbstractProxyModel):
 
 	def __searchItem(self, searchText, item):
 		return item.type == FileType.FILE and (
-					searchText.lower() in item.name().lower() or self.__searchTag(searchText, item.tags))
+				searchText.lower() in item.name().lower() or self.__searchTag(searchText, item.tags))
 
 
 	def __searchTag(self, searchText, tags):
