@@ -28,7 +28,7 @@ class TodoListApplicationContext(ApplicationContext):
 
 	@property
 	def conf(self):
-		return self.get_resource('editor.conf')
+		return self.get_resource('editor.json')
 
 
 	@property
