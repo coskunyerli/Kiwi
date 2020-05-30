@@ -127,6 +127,9 @@ class MainWindow(QtWidgets.QMainWindow, SaveListModelFolderItemService):
 						if itemChildNumber is not None:
 							currentItemIndex = self.mainWidget.fileListProxyModel.index(itemChildNumber)
 							self.mainWidget.fileListView.setCurrentIndex(currentItemIndex)
+		recursiveSearch = self.setting.value('enableRecursiveSearch')
+		if recursiveSearch is not None:
+			self.mainWidget.flattenSearchCheckbox.setChecked(recursiveSearch)
 
 
 	def saveSetting(self):
@@ -136,3 +139,5 @@ class MainWindow(QtWidgets.QMainWindow, SaveListModelFolderItemService):
 		if currentItemIndex.isValid():
 			itemID = currentItemIndex.data()[0]
 			self.setting.setValue('currentItemID', itemID)
+
+		self.setting.setValue('enableRecursiveSearch', self.mainWidget.flattenSearchCheckbox.isChecked())
