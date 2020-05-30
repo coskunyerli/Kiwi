@@ -51,7 +51,6 @@ class Ui_Dialog(object):
 		self.preferencesWidgetLayout.setContentsMargins(0, 0, 0, 0)
 		self.preferencesWidgetLayout.setSpacing(0)
 
-
 		self.categoryListWidget = QtWidgets.QListWidget(self.mainWidget)
 		self.categoryListWidget.setFixedWidth(200)
 		self.categoryListWidget.setObjectName('categoryListWidget')
@@ -106,26 +105,20 @@ class Preferences(Ui_Dialog, QtWidgets.QDialog):
 		self.setWindowModality(QtCore.Qt.ApplicationModal)
 		self.setWindowFlag(QtCore.Qt.Popup, True)
 
+		self.widgetList = dict()
+		self.currentVisibleWidget = None
+
 		# get the preferences and modes
 		self.preferences = preferencesInJson
 		# setStyleSheet should be assigned here. because if I assign it after line 153 in a way I don't understand why,
 		# there's a problem with style of transitionWidget in Linux os.
-		#self.initSignalsAndSlots()
+		self.initSignalsAndSlots()
 		self.initialize()
 
 
 	def initialize(self):
-		self.__addItemToTheCategory(['Editor', 'Save', 'Image Viewer', 'Font', 'Export'])
-
-		# self.generalWidget.setPreferences(self.preferences['general'], self.modes)
-		# self.audioWidget.setPreferences(self.preferences['audio'])
-		# self.unitWidget.setPreferences(self.preferences['unit'])
-		# self.saveWidget.setPreferences(self.preferences['save'])
-		#
-		# self.fontWidget.setUnitPreferences(self.preferences['unit'])
-		# self.fontWidget.setDocumentSize(self.documentSize)
-		# self.fontWidget.setPreferences(self.modes)
-		# self.categoryListWidget.setCurrentIndex(self.categoryListWidget.model().index(categoryIndex, 0))
+		self.__addItemToTheCategory(['Text Editor', 'Image Viewer', 'Save', 'Font', 'Export'])
+		self.categoryListWidget.setCurrentIndex(self.categoryListWidget.model().index(categoryIndex, 0))
 
 
 	def __addItemToTheCategory(self, categories):
@@ -143,7 +136,11 @@ class Preferences(Ui_Dialog, QtWidgets.QDialog):
 
 
 	def changePreferencesWidget(self, text):
-		return
+		currentWidget = self.widgetList[text]
+		if self.currentVisibleWidget is not None:
+			self.currentVisibleWidget.hide()
+		currentWidget.show()
+		self.currentVisibleWidget = currentWidget
 
 
 	def accept(self):

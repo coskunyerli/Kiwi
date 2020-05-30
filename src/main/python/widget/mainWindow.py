@@ -103,8 +103,8 @@ class MainWindow(QtWidgets.QMainWindow, SaveListModelFolderItemService):
 
 	@QtCore.Slot()
 	def about(self):
-		QtWidgets.QMessageBox.about(self, "About TodoList application",
-									"""<p>The <b>TodoList</b> example shows how 
+		QtWidgets.QMessageBox.about(self, "About Kiwi",
+									"""<p>The <b>Kiwi</b> example shows how 
 										to perform simple syntax highlighting by subclassing 
 										the QSyntaxHighlighter class and describing 
 										highlighting rules using regular expressions.</p>""")

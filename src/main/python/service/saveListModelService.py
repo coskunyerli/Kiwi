@@ -34,6 +34,7 @@ class __SaveListModelFolderItemService__(object):
 						folderInDict = json.loads(jsonInString)
 						id_ = [folderInDict['id']]
 						root = ListModelFolderItem(folderInDict['id'], folderInDict['name'], None)
+						# todo :burada read folder bir hata alırsa exception yolla yeni bir tür exception folderInDict valid bir variable olmalı
 						self.__readFileList(root, folderInDict.get('children', []), id_)
 						ListModelFileItem.setListID(id_[0] + 1)
 					except Exception as e:

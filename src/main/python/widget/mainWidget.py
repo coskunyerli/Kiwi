@@ -8,7 +8,6 @@
 # WARNING! All changes made in this file will be lost!
 import datetime
 import logging as log
-import os
 
 import core
 from PySide2 import QtCore, QtGui, QtWidgets
@@ -194,7 +193,7 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 		self.fileTreeModel.setRoot(root)
 
 		self.fileListProxyModel = FileListModelProxy()
-		# self.fileListProxyModel.setFilterCaseSensitivity(QtCore.Qt.CaseInsensitive)
+
 		self.fileListProxyModel.setSourceModel(self.fileTreeModel)
 		self.dataModel = DataModel(self.fileListProxyModel)
 
@@ -313,7 +312,11 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 
 	def dropItemToBreadCrumb(self, fileItemList, mimeData):
 		return
-		self.fileListProxyModel.dropMimeData(mimeData, None, -1, -1, QtCore.QModelIndex())
+		parentIndex = self.fileTreeModel.getItemIndex(fileItemList)
+		if self.fileTreeModel.dropMimeData(mimeData, QtCore.Qt.MoveAction, -1, -1, parentIndex) is True:
+			pass
+		else:
+			pass
 
 
 	def pinnedListModelFileItem(self):
@@ -369,6 +372,8 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 		newFolder = ListModelFolderItem(ListModelFileItem.IDGenerator(), displayName, None)
 		try:
 			i = self.fileListProxyModel.insertData(newFolder, 0)
+			log.info(f'New folder is created named {newFolder}')
+
 			index = self.fileListProxyModel.index(i)
 			self.fileListView.setCurrentIndex(index)
 		# Save root file into disc
@@ -434,6 +439,9 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 		if listModelFileItem.type == FileType.FOLDER:
 			self.fileListView.setCurrentIndex(QtCore.QModelIndex())
 			self.changeFolder(listModelFileItem)
+		elif listModelFileItem.type == FileType.FILE and self.dataProxyModel.rowCount() > 0:
+			index = self.dataProxyModel.index(0, 0)
+			self.openData(index)
 
 
 	def changeFolder(self, listModelFolderItem):
@@ -443,8 +451,8 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 
 
 	def clickedBreadCrumb(self, folder):
-		self.fileListView.setCurrentIndex(QtCore.QModelIndex())
 		self.changeFolder(folder)
+		self.fileListView.setCurrentIndex(QtCore.QModelIndex())
 
 
 	def updateBreadCrumb(self):

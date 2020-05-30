@@ -1,4 +1,4 @@
-import PySide2.QtCore as QtCore, PySide2.QtWidgets as QtWidgets, PySide2.QtGui as QtGui
+import PySide2.QtCore as QtCore, PySide2.QtWidgets as QtWidgets
 
 
 class BaseImageViewer(QtWidgets.QGraphicsView):
