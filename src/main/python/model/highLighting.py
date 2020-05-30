@@ -19,7 +19,8 @@ class Highlighter(QtGui.QSyntaxHighlighter):
 		for rule in self.highlightingRules:
 			matches = rule.search(text)
 			for match in matches:
-				self.setFormat(match.start(), match.end() - match.start(), rule.style.charFormat)
+				ruleFormat = rule.style.charFormat
+				self.setFormat(match.start(), match.end() - match.start(), ruleFormat)
 
 
 	def setEnumaration(self):

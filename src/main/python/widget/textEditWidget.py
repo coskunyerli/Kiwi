@@ -85,7 +85,7 @@ class TextEditorWidget(QtWidgets.QWidget):
 		self.highlightCursor = QtGui.QTextCursor(self.editor.document())
 		self.highlightCursor.setPosition(0)
 
-		searchStyle = StyleItem('search', '', None, None, None, None, None, None, 'yellow', None)
+		searchStyle = StyleItem('search', '', 'Menlo', 12, None, None, None, None, 'yellow', None)
 		self.rule = HighlightingRule(self.editor)
 		self.rule.style = searchStyle
 		self.highlighter.highlightingRules.append(self.rule)

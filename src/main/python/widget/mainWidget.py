@@ -311,12 +311,9 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 
 
 	def dropItemToBreadCrumb(self, fileItemList, mimeData):
-		return
 		parentIndex = self.fileTreeModel.getItemIndex(fileItemList)
-		if self.fileTreeModel.dropMimeData(mimeData, QtCore.Qt.MoveAction, -1, -1, parentIndex) is True:
-			pass
-		else:
-			pass
+		if self.fileTreeModel.dropMimeData(mimeData, QtCore.Qt.MoveAction, -1, -1, parentIndex) is False:
+			log.warning('Item is not dropped successfully to the bread crumb')
 
 
 	def pinnedListModelFileItem(self):
