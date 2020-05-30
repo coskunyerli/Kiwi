@@ -178,6 +178,7 @@ class BreadCrumbItem(QtWidgets.QFrame):
 		mimeData = event.mimeData()
 		self.parent().dropped.emit(self.item, mimeData)
 		super(BreadCrumbItem, self).dropEvent(event)
+		event.accept()
 
 
 	def enterEvent(self, event):
