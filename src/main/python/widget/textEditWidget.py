@@ -82,15 +82,22 @@ class TextEditorWidget(QtWidgets.QWidget):
 		self.styleItems = []
 		self.highlighter = Highlighter(self.editor, self.styleItems)
 
+		self.highlightCursor = QtGui.QTextCursor(self.editor.document())
+		self.highlightCursor.setPosition(0)
+
 		searchStyle = StyleItem('search', '', None, None, None, None, None, None, 'yellow', None)
 		self.rule = HighlightingRule(self.editor)
 		self.rule.style = searchStyle
 		self.highlighter.highlightingRules.append(self.rule)
-		self.rule.pattern = re.compile('')
+		self.rule.pattern = re.compile('', re.IGNORECASE)
 
 		self.nextWordSearchWordShortcut = QtWidgets.QShortcut(self.searchWidgetInEditor)
 		self.nextWordSearchWordShortcut.setContext(QtCore.Qt.WidgetWithChildrenShortcut)
 		self.nextWordSearchWordShortcut.setKey(QtGui.QKeySequence(QtCore.Qt.Key_Return))
+
+		self.showSearchWidgetShortcut = QtWidgets.QShortcut(self)
+		self.showSearchWidgetShortcut.setContext(QtCore.Qt.WidgetWithChildrenShortcut)
+		self.showSearchWidgetShortcut.setKey(QtGui.QKeySequence('CTRL+F'))
 
 		self.initialize()
 		self.initSignalsAndSlots()
@@ -112,16 +119,17 @@ class TextEditorWidget(QtWidgets.QWidget):
 
 	def initSignalsAndSlots(self):
 		self.doneButton.clicked.connect(self.hideSearchWidgetInEditor)
-		self.prevWordButton.clicked.connect(self.prevSearchText)
-		self.nextWordButton.clicked.connect(self.nextSearchText)
-		self.nextWordSearchWordShortcut.activated.connect(self.nextSearchText)
+		self.prevWordButton.clicked.connect(self.previousSearchedWord)
+		self.nextWordButton.clicked.connect(self.nextSearchedWord)
+		self.nextWordSearchWordShortcut.activated.connect(self.nextWordButton.click)
+		self.showSearchWidgetShortcut.activated.connect(self.showSearch)
 		self.replaceCheckBox.stateChanged.connect(
 				lambda value: self.replaceWidget.show() if value else self.replaceWidget.hide())
 		self.replaceAllButton.clicked.connect(self.replaceAllText)
 		self.replaceButton.clicked.connect(self.replaceText)
+		self.searchLineBoxInEditor.textChanged.connect(self.searchWord)
+		self.editor.cursorPositionChanged.connect(self.updateHighlightCursor)
 
-
-	# self.editor.document().contentsChange.connect(self.contentChanged)
 
 	def setStyleItems(self, styleItems):
 		self.styleItems = styleItems
@@ -134,102 +142,88 @@ class TextEditorWidget(QtWidgets.QWidget):
 		self.searchWidgetInEditor.hide()
 
 
-	def nextSearchText(self):
-		if not self.startFirst:
-			if not self._nextSearchText():
-				self.startFirst = True
+	def previousSearchedWord(self):
+		cursor = self.searchTextInCurrentDocument(self.searchLineBoxInEditor.text(),
+												  position = self.highlightCursor.selectionStart(),
+												  option = QtGui.QTextDocument.FindBackward)
+		if cursor is not None:
+			self.editor.setTextCursor(cursor)
+			self.searchLineBoxInEditor.setFocus()
+
+
+	def nextSearchedWord(self):
+		cursor = self.searchTextInCurrentDocument(self.searchLineBoxInEditor.text(),
+												  position = self.highlightCursor.selectionEnd())
+		if cursor is not None:
+			self.editor.setTextCursor(cursor)
+			self.searchLineBoxInEditor.setFocus()
+
+
+	def searchTextInCurrentDocument(self, text, position = 0, option = QtGui.QTextDocument.FindFlags()):
+		if text:
+			# if self.wholeWordCheckbox.isChecked():
+			# 	option = option | QtGui.QTextDocument.FindWholeWords
+
+			cursor = self.editor.document().find(text, position, option)
+			if cursor.isNull() is False:
+				return cursor
+			else:
+				if option & QtGui.QTextDocument.FindBackward:
+					c = QtGui.QTextCursor(self.editor.document())
+					c.setPosition(self.editor.document().characterCount() - 1)
+				else:
+					c = QtGui.QTextCursor(self.editor.document())
+				return c
 		else:
-			self._nextSearchText(0)
-			self.startFirst = False
-
-
-	def _nextSearchText(self, position = None):
-		cursor = self.editor.textCursor()
-		if position is None:
-			cursor.setPosition(cursor.selectionEnd())
-		else:
-			cursor.setPosition(position)
-		block = cursor.block()
-		text = block.text()[cursor.positionInBlock():]
-		while block.isValid():
-			matches = self.rule.search(text)
-			for match in matches:
-				cursor.setPosition(cursor.positionInBlock() + block.position() + match.start())
-				cursor.movePosition(QtGui.QTextCursor.Right, QtGui.QTextCursor.KeepAnchor,
-									match.end() - match.start())
-
-				self.editor.setTextCursor(cursor)
-				return True
-
-			block = block.next()
-			cursor.setPosition(block.position())
-			text = block.text()
-		return False
-
-
-	def prevSearchText(self):
-		if not self.startLast:
-			if not self._prevSearchText():
-				self.startLast = True
-		else:
-			self._prevSearchText(self.editor.document().characterCount() - 1)
-			self.startLast = False
-
-
-	def _prevSearchText(self, position = None):
-		cursor = self.editor.textCursor()
-		if position is None:
-			cursor.setPosition(cursor.selectionStart())
-		else:
-			cursor.setPosition(position)
-		block = cursor.block()
-		text = block.text()[0:cursor.positionInBlock()]
-		while block.isValid():
-			matches = list(self.rule.search(text))
-			if len(matches) > 0:
-				match = matches[-1]
-				cursor.setPosition(block.position() + match.end())
-				cursor.movePosition(QtGui.QTextCursor.Left, QtGui.QTextCursor.KeepAnchor,
-									match.end() - match.start())
-				self.editor.setTextCursor(cursor)
-				return True
-
-			block = block.previous()
-			cursor.setPosition(block.position() + len(block.text()))
-			text = block.text()
-		return False
+			return None
 
 
 	def replaceAllText(self):
+		cursor = self.searchTextInCurrentDocument(self.searchLineBoxInEditor.text(),
+												  position = self.highlightCursor.selectionEnd())
 		oldWord = self.searchLineBoxInEditor.text()
-		if oldWord:
-			newWord = self.replaceLineEdit.text()
-			block = self.editor.document().firstBlock()
-			cursor = self.editor.textCursor()
-			cursor.beginEditBlock()
-			while block.isValid():
-				text = block.text()
-				if text.find(oldWord) != -1:
-					tcursor = QtGui.QTextCursor(block)
-					tcursor.select(QtGui.QTextCursor.BlockUnderCursor)
-					tcursor.removeSelectedText()
-					tcursor.clearSelection()
-					newText = text.replace(oldWord, newWord)
-					tcursor.insertBlock()
-					tcursor.insertText(newText)
-				block = block.next()
-			cursor.endEditBlock()
+		newWord = self.replaceLineEdit.text()
+		while oldWord and newWord and cursor.isNull() is False and cursor.hasSelection() is True:
+			self.replaceNextText(cursor, newWord)
+			cursor = self.searchTextInCurrentDocument(self.searchLineBoxInEditor.text(),
+													  position = cursor.selectionEnd())
+
+		self.editor.setTextCursor(cursor)
 
 
 	def replaceText(self):
-		cursor = self.replaceNextText(self.editor.textCursor())
-		self.editor.setTextCursor(cursor)
-		self.nextSearchText()
+		cursor = self.searchTextInCurrentDocument(self.searchLineBoxInEditor.text(),
+												  position = 0)
+		cursor.beginEditBlock()
+		oldWord = self.searchLineBoxInEditor.text()
+		newWord = self.replaceLineEdit.text()
+		if oldWord and newWord:
+			cursor = self.replaceNextText(cursor, newWord)
+			self.editor.setTextCursor(cursor)
+			self.nextSearchedWord()
+		cursor.endEditBlock()
+
+
+	def replaceNextText(self, cursor, newWord):
+		if newWord and cursor.isNull() is False and cursor.hasSelection():
+			cursor.beginEditBlock()
+			cursor.insertText(newWord)
+			cursor.endEditBlock()
+		return cursor
 
 
 	def searchWord(self, text):
-		self.rule.pattern = re.compile(text)
+		self.rule.pattern = re.compile(text, re.IGNORECASE)
 		self.updateEditor()
+		if text:
+			cursor = self.searchTextInCurrentDocument(self.searchLineBoxInEditor.text(),
+													  position = self.highlightCursor.selectionStart())
+			if cursor is not None:
+				self.editor.setTextCursor(cursor)
+		else:
+			cursor = QtGui.QTextCursor(self.editor.document())
+			cursor.setPosition(self.editor.textCursor().selectionStart())
+			self.editor.setTextCursor(cursor)
 
 
 	def showSearch(self):
@@ -237,3 +231,12 @@ class TextEditorWidget(QtWidgets.QWidget):
 		text = self.editor.textCursor().selectedText()
 		self.searchLineBoxInEditor.setText(text)
 		self.searchLineBoxInEditor.setFocus()
+
+
+	def updateEditor(self):
+		charCount = self.editor.document().characterCount()
+		self.editor.document().contentsChange.emit(0, 0, charCount)
+
+
+	def updateHighlightCursor(self):
+		self.highlightCursor = self.editor.textCursor()

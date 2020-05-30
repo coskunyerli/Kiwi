@@ -119,11 +119,14 @@ class TextEditorDialog(QtWidgets.QDialog, ConfigurationService):
 
 	def reject(self):
 		if self.isModified() is True:
-			ret = QtWidgets.QMessageBox.warning(self, "Application",
-												"The document hasdasas been modified.\n"
-												"Do you want to save your changes?",
-												QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.Cancel |
-												QtWidgets.QMessageBox.No)
+			if self.currentTextData is None:
+				ret = QtWidgets.QMessageBox.warning(self, "Application",
+													"The document hasdasas been modified.\n"
+													"Do you want to save your changes?",
+													QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.Cancel |
+													QtWidgets.QMessageBox.No)
+			else:
+				ret = QtWidgets.QMessageBox.Yes
 
 			if ret == QtWidgets.QMessageBox.Yes:
 				# save the session before quit
