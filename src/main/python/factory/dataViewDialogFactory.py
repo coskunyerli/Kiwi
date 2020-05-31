@@ -3,11 +3,13 @@ from widget.dialog.imageViewDialog import ImageViewDialog
 from widget.dialog.textEditorDialog import TextEditorDialog
 
 
-class DataDialogFactory(object):
+class DataViewDialogFactory(object):
+	# create a view object to show data
 	@classmethod
 	def create(cls, data, parent):
 		if data.type() == DataType.STYLEDATA:
 			dialog = TextEditorDialog(parent)
+			#dialog.fileSaved.connect(parent.insertDataToDataModel)
 			dialog.setCurrentData(data)
 			return dialog
 		elif data.type() == DataType.IMAGEFILEDATA:

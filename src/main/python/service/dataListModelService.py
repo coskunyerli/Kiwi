@@ -1,11 +1,9 @@
-import datetime
 import json
 import logging as log
 import os
 
-from enums import DataType, FileType
+from enums import FileType
 from factory.dataFactory import DataFactory
-from model.data import ImageFileData, FileData
 
 
 class __DataListModelFolderItemService__(object):
@@ -21,59 +19,78 @@ class __DataListModelFolderItemService__(object):
 		if self.path is not None:
 			dict_ = list(map(lambda data: data.dict(), listModelFileItem.dataList()))
 			filename = os.path.join(self.path, f'{listModelFileItem.id()}.json')
-			with open(filename, 'w') as file:
-				jsonInString = json.dumps(dict_)
-				file.write(jsonInString)
+			try:
+				with open(filename, 'w') as file:
+					jsonInString = json.dumps(dict_)
+					file.write(jsonInString)
+			except Exception as e:
+				log.error(f'Error is occurred while saving item in data list model service. '
+						  f'Data item is {listModelFileItem}. 'f'Exception is {e}')
 		else:
-			log.warning('Path is not valid while saving in SaveListModelFolderItemService')
+			log.warning(f'Path is not valid while saving data in data list model service. '
+						f'Data item is {listModelFileItem}')
 
 
 	def load(self, listModelFileItem):
 		if listModelFileItem.type == FileType.FOLDER:
-			return
+			return False
 		if self.path is not None:
 			filename = os.path.join(self.path, f'{listModelFileItem.id()}.json')
 			if listModelFileItem.isRead() is False:
-				with open(filename, 'r') as file:
-					jsonInString = file.read()
-					if jsonInString:
-						try:
-							dataListInDict = json.loads(jsonInString)
-							for dictData in dataListInDict:
-								data = DataFactory.fileDataFromJson(dictData)
-								if data is not None:
-									listModelFileItem.appendData(data)
-							listModelFileItem.setRead(True)
-						except Exception as e:
-							log.error(f'Data list is not loaded successfully in file {filename}. Exception is {e}')
+				try:
+					with open(filename, 'r') as file:
+						jsonInString = file.read()
+						if jsonInString:
+							try:
+								dataListInDict = json.loads(jsonInString)
+								for dictData in dataListInDict:
+									data = DataFactory.fileDataFromJson(dictData)
+									if data is not None:
+										listModelFileItem.appendData(data)
+									else:
+										log.warning(f'Data {dictData} is not valid to create ListModelFileItem. '
+													f'Filename is {filename}')
+								listModelFileItem.setRead(True)
+								return True
+							except Exception as e:
+								log.error(f'Data list is not loaded successfully in file {filename}. Exception is {e}')
+								return False
+						else:
+							log.warning('Read file is empty in list model service while loading file')
+							return False
+				except FileNotFoundError as e:
+					log.error(f'File {filename} is not found in data list model service while loading file')
+					return False
 
 		else:
 			log.warning('Path is not valid while loading in SaveListModelFolderItemService')
-			return None
-
-
-	def dataCreator(self, dictData):
-		if dictData['type'] == DataType.STYLEDATA:
-			data = FileData(dictData['name'], dictData['path'],
-							datetime.datetime.fromtimestamp(dictData.get('createDate')))
-			data.setType(DataType.STYLEDATA)
-		elif dictData['type'] == DataType.IMAGEFILEDATA:
-			data = ImageFileData(dictData['name'], dictData['path'],
-								 datetime.datetime.fromtimestamp(dictData.get('createDate')))
-		else:
-			data = None
-		return data
+			return False
 
 
 	def deleteListModelFileItem(self, listModelFileItem):
 		if self.path is not None:
 			filename = os.path.join(self.path, f'{listModelFileItem.id()}.json')
-			os.remove(filename)
-			for data in listModelFileItem.dataList():
-				self.deleteDataModelItem(data)
+			try:
+				os.remove(filename)
+				for data in listModelFileItem.dataList():
+					self.__deleteDataModelItem(data)
+			except Exception as e:
+				log.warning(f'Error occurred while delete file from storage at data list model service. '
+							f'Parent file is {filename}. Exception is {e}')
+			return True
+		else:
+			return False
 
 
 	def deleteDataModelItem(self, dataModelItem):
+		try:
+			self.__deleteDataModelItem(dataModelItem)
+		except Exception as e:
+			log.error(f'Error occurred while delete file item from dtorage at data list model service. '
+					  f'File is {dataModelItem.path}. Exception is {e}')
+
+
+	def __deleteDataModelItem(self, dataModelItem):
 		filename = dataModelItem.path
 		os.remove(filename)
 

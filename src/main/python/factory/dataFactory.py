@@ -1,13 +1,15 @@
 import os
 import datetime
 
+import static
 from enums import DataType
 from model.data import ImageFileData, FileData
 
 
 class DataFactory(object):
 	@classmethod
-	def fileDataFromDialogData(cls, data):
+	def fileDataFromFilePickerDialog(cls, data):
+		# create file data from file picker data widget.
 		_, extension = os.path.splitext(data.filename)
 		if extension in ['.jpg', '.png', '.jpeg']:
 			fileData = ImageFileData(data.name, data.filename)
@@ -24,25 +26,44 @@ class DataFactory(object):
 
 	@classmethod
 	def fileDataFromJson(cls, dictData):
-		if dictData['type'] == DataType.STYLEDATA:
-			data = FileData(dictData['name'], dictData['path'],
-							datetime.datetime.fromtimestamp(dictData.get('createDate')))
-			data.setType(DataType.STYLEDATA)
+		# create data object from json. Data object can be file data, image data, pdf data or text file data
+		if 'type' not in dictData or 'path' not in dictData or 'type' not in dictData:
+			return None
 
-		elif dictData['type'] == DataType.IMAGEFILEDATA:
-			data = ImageFileData(dictData['name'], dictData['path'],
-								 datetime.datetime.fromtimestamp(dictData.get('createDate')))
+		error = lambda key: f'File data object creation in fileDataFromJson at DataFactory. Key is {key}'
+		try:
+			name = static.getValueFromDict(dictData['name'], [str], error('name'))
+			path = static.getValueFromDict(dictData['path'], [str], error('path'))
+			type_ = static.getValueFromDict(dictData['type'], [int], error('type'))
+			if type_ == DataType.STYLEDATA:
+				data = FileData(name, path,
+								datetime.datetime.fromtimestamp(
+										static.getValueFromDict(dictData.get('createDate'), [float],
+																error('create time'))))
+				data.setType(DataType.STYLEDATA)
 
-		elif dictData['type'] == DataType.PDFFILEDATA:
-			data = FileData(dictData['name'], dictData['path'],
-							datetime.datetime.fromtimestamp(dictData.get('createDate')))
-			data.setType(DataType.PDFFILEDATA)
+			elif type_ == DataType.IMAGEFILEDATA:
+				data = ImageFileData(name, path,
+									 datetime.datetime.fromtimestamp(
+											 static.getValueFromDict(dictData.get('createDate'), [float],
+																	 error('create time'))))
 
-		elif dictData['type'] == DataType.TEXTFILEDATA:
-			data = FileData(dictData['name'], dictData['path'],
-							datetime.datetime.fromtimestamp(dictData.get('createDate')))
-			data.setType(DataType.TEXTFILEDATA)
+			elif type_ == DataType.PDFFILEDATA:
+				data = FileData(name, path,
+								datetime.datetime.fromtimestamp(
+										static.getValueFromDict(dictData.get('createDate'), [float],
+																error('create time'))))
+				data.setType(DataType.PDFFILEDATA)
 
-		else:
-			data = None
-		return data
+			elif type_ == DataType.TEXTFILEDATA:
+				data = FileData(name, path,
+								datetime.datetime.fromtimestamp(
+										static.getValueFromDict(dictData.get('createDate'), [float],
+																error('create time'))))
+				data.setType(DataType.TEXTFILEDATA)
+
+			else:
+				data = None
+			return data
+		except ValueError as e:
+			return None

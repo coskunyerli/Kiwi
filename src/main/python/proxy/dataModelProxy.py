@@ -6,7 +6,9 @@ class DataModelProxy(QtCore.QSortFilterProxyModel):
 		index = self.sourceModel().index(sourceRow)
 		dataList = index.data()
 		reqExp = self.filterRegExp()
+		name = dataList[1].lower()
+		# check that pattern text in the name
 		if reqExp.pattern():
-			return reqExp.pattern().lower() in dataList[1].lower()
+			return reqExp.pattern().lower() in name
 		else:
 			return True

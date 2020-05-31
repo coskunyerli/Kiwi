@@ -7,8 +7,12 @@ class __ConfigurationService__(object):
 		self.data = {}
 
 
-	def get(self, key):
-		return self.data.get(key)
+	def get(self, key, default = None):
+		data = self.data.get(key)
+		if data is None:
+			return default
+		else:
+			return data
 
 
 	def setPath(self, path):
@@ -16,10 +20,13 @@ class __ConfigurationService__(object):
 
 
 	def read(self):
-		with open(self.path, 'r') as confFile:
-			configInString = confFile.read()
-			config = json.loads(configInString)
-			self.data = config
+		try:
+			with open(self.path, 'r') as confFile:
+				configInString = confFile.read()
+				config = json.loads(configInString)
+				self.data = config
+		except FileNotFoundError as e:
+			raise FileNotFoundError('No such file or directory for configuration file')
 
 
 __configuration__ = __ConfigurationService__()

@@ -22,7 +22,7 @@ class ListTreeModel(QtCore.QAbstractItemModel):
 	def moveRow(self, sourceParent, sourceRow, destinationParent, destinationChild):
 		if sourceParent == destinationParent and sourceRow == destinationChild:
 			return False
-		destinationChild = self.__checkFile(destinationChild, destinationChild)
+		destinationChild = self.__toValidIndex(destinationChild, destinationChild)
 		self.beginMoveRows(sourceParent, sourceRow, sourceRow + 1, destinationParent, destinationChild)
 		sourceFolder = self.getFileItem(sourceParent)
 		destinationParentItem = self.getFileItem(destinationParent)
@@ -34,6 +34,7 @@ class ListTreeModel(QtCore.QAbstractItemModel):
 
 
 	def find(self, func):
+		# find object with given function
 		items = self.rootFolder().find(func, recursive = True)
 		if func(self.rootFolder()):
 			items.append(self.rootFolder())
@@ -41,6 +42,8 @@ class ListTreeModel(QtCore.QAbstractItemModel):
 
 
 	def setRoot(self, root):
+		if isinstance(root, ListModelFileItem) is False:
+			raise InvalidListModelItemException('Invalid object in setRoot of tree model')
 		self.beginResetModel()
 		self.rootFolderItem = root
 		self.endResetModel()
@@ -75,7 +78,9 @@ class ListTreeModel(QtCore.QAbstractItemModel):
 
 
 	def beginEditData(self, index):
+		# get file item with given index
 		oldData = self.getFileItem(index)
+		# copy of data
 		if oldData.type == FileType.FOLDER:
 			copy = ListModelFolderItem(oldData.id(), oldData.name(), oldData.parent(), oldData.displayName,
 									   oldData.isFixed)
@@ -86,7 +91,9 @@ class ListTreeModel(QtCore.QAbstractItemModel):
 
 
 	def endEditData(self, index):
+		# get object with given index
 		item = self.getFileItem(index)
+		# update last update date
 		item.updateLastUpdateDate()
 		self.dataChanged.emit(index, index)
 
@@ -116,8 +123,9 @@ class ListTreeModel(QtCore.QAbstractItemModel):
 
 
 	def insertData(self, listModelFileItem, index = None, parent = QtCore.QModelIndex()):
-		if listModelFileItem is None:
-			return False
+
+		if isinstance(listModelFileItem, ListModelFileItem) is False:
+			raise InvalidListModelItemException(f'Data should be ListModelFileItem to insert data to the tree model ')
 		if index is None:
 			index = self.rowCount()
 
@@ -127,7 +135,7 @@ class ListTreeModel(QtCore.QAbstractItemModel):
 			raise InvalidListModelItemException(
 					f'Data "({listModelFileItem.id()}, {listModelFileItem.name}) " can not insert to model. Because it already exists in the model')
 		self.beginInsertRows(parent, index, index)
-		checkedIndex = self.__checkFile(index, index, parent)
+		checkedIndex = self.__toValidIndex(index, index, parent)
 		parentFolder.insert(listModelFileItem, checkedIndex)
 		parentFolder.updateLastUpdateDate()
 		listModelFileItem.setParent(parentFolder)
@@ -161,12 +169,11 @@ class ListTreeModel(QtCore.QAbstractItemModel):
 		mimeDat = super(ListTreeModel, self).mimeData(indices)
 		if indices:
 			index = indices[0]
-			perminentIndex = index
-			mimeDat.setColorData(perminentIndex)
+			# index data in set as color data
+			mimeDat.setColorData(index)
 		return mimeDat
 
 
-	#
 	def dropMimeData(self, mimeData, action, row, column, parent):
 		dropIndex = mimeData.colorData()
 		if dropIndex is not None and dropIndex.isValid():
@@ -176,11 +183,11 @@ class ListTreeModel(QtCore.QAbstractItemModel):
 			row = self.rowCount(parent) if row == -1 else row
 
 			index = dropFileList.childNumber()
+			# if drop object is dropped to the same place return False
 			if dropParent == beforeParentObject and (index == row or index + 1 == row):
 				return False
-
+			# move data
 			index = dropFileList.childNumber()
-			# print(dropIndex.parent(), index, parent, row)
 			self.beginMoveRows(dropIndex.parent(), index, index, parent, row)
 			beforeParentObject.remove(dropFileList)
 			dropParent.insert(dropFileList, row)
@@ -221,6 +228,7 @@ class ListTreeModel(QtCore.QAbstractItemModel):
 
 
 	def getFileItem(self, index):
+		# get item of given index
 		if index.isValid() is False:
 			return self.rootFolderItem
 		else:
@@ -236,12 +244,9 @@ class ListTreeModel(QtCore.QAbstractItemModel):
 		return item
 
 
-	def __checkFile(self, from_, to, parent = QtCore.QModelIndex()):
-		"""
-		:param from_: from index
-		:param to:  to index
-		:return: find to first not fixed index between from_ and to return that index
-		"""
+	def __toValidIndex(self, from_, to, parent = QtCore.QModelIndex()):
+		# return a valid index of given index
+		# find first index in that element is not fixed
 		parentItem = self.getFileItem(parent)
 		if from_ < 0 or to >= self.rowCount(parent):
 			return to

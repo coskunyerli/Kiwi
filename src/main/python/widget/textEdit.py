@@ -25,6 +25,7 @@ class TextEdit(QtWidgets.QTextEdit):
 
 
 	def dropEvent(self, event):
+		# accept insert image to the text editor
 		urls = event.mimeData().urls()
 		if urls:
 			file_ = urls[0].path()

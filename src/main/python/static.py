@@ -95,3 +95,9 @@ def passedTime(time, suffix = None):
 	else:
 		f'{math.floor(year)}{suffix[6]}'
 
+
+def getValueFromDict(value, typeArray, error):
+	for type_ in typeArray:
+		if isinstance(value, type_) is True:
+			return value
+	raise ValueError(f'{error}. Value should be {typeArray} class. Current is {type(value)}')

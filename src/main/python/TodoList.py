@@ -35,6 +35,7 @@ if __name__ == "__main__":
 		saveListService.saveListModelService().setPath(fbs.fileListPath)
 		dataListService.dataListModelService().setPath(fbs.filePath)
 
+
 		confService.configuration().setPath(fbs.conf)
 		confService.configuration().read()
 		log.info('Configuration is loaded successfully...')

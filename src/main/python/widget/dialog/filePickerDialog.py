@@ -22,6 +22,7 @@ class FilePickerDialog(QtWidgets.QDialog):
 		self.mainLayout = QtWidgets.QVBoxLayout(self)
 		self.mainLayout.setContentsMargins(8, 8, 8, 8)
 
+		# current data is invalid
 		self.data = Data(None, None)
 
 		self.fileWidget = QtWidgets.QWidget(self)
@@ -73,11 +74,13 @@ class FilePickerDialog(QtWidgets.QDialog):
 
 
 	def selectFile(self):
+		# select new filename
 		filename, result = QtWidgets.QFileDialog.getOpenFileName(self, 'Open File')
-		if result:
+		# result should be true and filename is valid
+		if result and filename:
 			self.data.filename = filename
 			self.filenameLabel.setText(filename)
-
+		# check that current data should be valid
 		if self.data.isValid():
 			self.saveButton.setEnabled(True)
 		else:
@@ -85,7 +88,9 @@ class FilePickerDialog(QtWidgets.QDialog):
 
 
 	def updateName(self):
+		# check that current data should be valid
 		self.data.name = self.nameEdit.text()
+
 		if self.data.isValid():
 			self.saveButton.setEnabled(True)
 		else:
@@ -95,18 +100,22 @@ class FilePickerDialog(QtWidgets.QDialog):
 	def accept(self):
 		basename = os.path.basename(self.data.filename)
 		_, extension = os.path.splitext(self.data.filename)
+		# check that extension can be ['.jpg', '.png', '.jpeg', .pdf .txt]. Others are not permitted
 		if extension in ['.jpg', '.png', '.jpeg']:
+			# create image reader and check that data can read or not
 			imageReader = QtGui.QImageReader(self.data.filename)
-			imageReader.setAutoTransform(True)
 			if imageReader.canRead():
+				# copy file into local path and create data object
 				writePath = os.path.join(core.fbs.filesPath, basename)
 				copyfile(self.data.filename, writePath)
 				self.data.filename = writePath
+
 		elif extension == '.pdf' or extension == '.txt':
 			writePath = os.path.join(core.fbs.filesPath, basename)
 			copyfile(self.data.filename, writePath)
 			self.data.filename = writePath
 		else:
+			# other extensions are not valid for now
 			self.data = Data(None, None)
 
 		super(FilePickerDialog, self).accept()

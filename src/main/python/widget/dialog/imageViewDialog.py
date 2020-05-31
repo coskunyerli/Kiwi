@@ -21,12 +21,14 @@ class ImageViewDialog(QtWidgets.QDialog):
 
 	def open(self):
 		super(ImageViewDialog, self).open()
+		# fit in view after dialog open
 		self.graphicsView.setPixmap(self.imageFileData.pixmap())
 		self.graphicsView.fitInView(self.graphicsView.pixmapItem, QtCore.Qt.KeepAspectRatio)
 
 
 	def keyPressEvent(self, event):
 		if event.key() == QtCore.Qt.Key_F:
+			# press F key fit in view
 			self.graphicsView.fitInView(self.graphicsView.pixmapItem, QtCore.Qt.KeepAspectRatio)
 		else:
 			super(ImageViewDialog, self).keyPressEvent(event)

@@ -1,3 +1,4 @@
+import static
 from PySide2 import QtGui
 
 
@@ -28,7 +29,7 @@ class StyleItem(object):
 
 
 	def __str__(self):
-		return '%s %s' % (self.name, self._blockCharFormat.foreground().color().name())
+		return f'StyleItem({self.name}, {self._blockCharFormat.foreground().color().name()})'
 
 
 	def __repr__(self):
@@ -54,15 +55,23 @@ class StyleItem(object):
 		self._blockCharFormat = format
 
 
-	def copy(self):
-		return StyleItem.create(self.json())
-
-
 	@staticmethod
 	def create(dictItem):
-		return StyleItem(dictItem['name'], dictItem['pattern'], dictItem.get('family', 'Courier'),
-						 dictItem.get('size', 12),
-						 dictItem.get('bold', False),
-						 dictItem.get('strikeout', False), dictItem.get('italic', False),
-						 dictItem.get('color', 'white'), dictItem.get('background', None),
+		if 'name' not in dictItem:
+			raise ValueError('"name" should include dict object to create StyleItem object')
+		if 'pattern' not in dictItem:
+			raise ValueError('"pattern" should include dict object to create StyleItem object')
+		# error function to print
+		error = lambda key: f'StyleItem class, key is "{key}"'
+
+		return StyleItem(static.getValueFromDict(dictItem['name'], [str], error('name')),
+						 static.getValueFromDict(dictItem['pattern'], [str], error('pattern')),
+						 static.getValueFromDict(dictItem.get('family', 'Courier'), [str], error('family')),
+						 static.getValueFromDict(dictItem.get('size', 12), [int, float], error('size')),
+						 static.getValueFromDict(dictItem.get('bold', False), [bool], error('bold')),
+						 static.getValueFromDict(dictItem.get('strikeout', False), [bool], error('strikeout')),
+						 static.getValueFromDict(dictItem.get('italic', False), [bool], error('italic')),
+						 static.getValueFromDict(dictItem.get('color', 'white'), [str], error('color')),
+						 static.getValueFromDict(dictItem.get('background', None), [str, type(None)],
+												 error('background')),
 						 dictItem.get('next', None))

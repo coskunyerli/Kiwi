@@ -117,6 +117,13 @@ class TextEditorWidget(QtWidgets.QWidget):
 		self.replaceWidget.hide()
 
 
+	def keyPressEvent(self, event):
+		if event.key() == QtCore.Qt.Key_Escape and self.searchWidgetInEditor.isVisible():
+			self.hideSearchWidgetInEditor()
+		else:
+			super(TextEditorWidget, self).keyPressEvent(event)
+
+
 	def initSignalsAndSlots(self):
 		self.doneButton.clicked.connect(self.hideSearchWidgetInEditor)
 		self.prevWordButton.clicked.connect(self.previousSearchedWord)
@@ -143,23 +150,29 @@ class TextEditorWidget(QtWidgets.QWidget):
 
 
 	def previousSearchedWord(self):
+		# find previous text. start from current highlight cursor position
 		cursor = self.searchTextInCurrentDocument(self.searchLineBoxInEditor.text(),
 												  position = self.highlightCursor.selectionStart(),
 												  option = QtGui.QTextDocument.FindBackward)
+		# if it is found update current cursor
 		if cursor is not None:
 			self.editor.setTextCursor(cursor)
 			self.searchLineBoxInEditor.setFocus()
 
 
 	def nextSearchedWord(self):
+		# find next text. start from current highlight cursor position
 		cursor = self.searchTextInCurrentDocument(self.searchLineBoxInEditor.text(),
 												  position = self.highlightCursor.selectionEnd())
+		# if it is found update current cursor
 		if cursor is not None:
 			self.editor.setTextCursor(cursor)
 			self.searchLineBoxInEditor.setFocus()
 
 
 	def searchTextInCurrentDocument(self, text, position = 0, option = QtGui.QTextDocument.FindFlags()):
+		# find text with given text position and option parameters
+
 		if text:
 			# if self.wholeWordCheckbox.isChecked():
 			# 	option = option | QtGui.QTextDocument.FindWholeWords
@@ -179,32 +192,38 @@ class TextEditorWidget(QtWidgets.QWidget):
 
 
 	def replaceAllText(self):
+		# replace all text start from position 0
 		cursor = self.searchTextInCurrentDocument(self.searchLineBoxInEditor.text(),
-												  position = self.highlightCursor.selectionEnd())
+												  position = 0)
 		oldWord = self.searchLineBoxInEditor.text()
 		newWord = self.replaceLineEdit.text()
+		# get old and new word, these are should be valid
+		cursor.beginEditBlock()
 		while oldWord and newWord and cursor.isNull() is False and cursor.hasSelection() is True:
 			self.replaceNextText(cursor, newWord)
 			cursor = self.searchTextInCurrentDocument(self.searchLineBoxInEditor.text(),
 													  position = cursor.selectionEnd())
-
+		cursor.endEditBlock()
+		# update current cursor
 		self.editor.setTextCursor(cursor)
 
 
 	def replaceText(self):
-		cursor = self.searchTextInCurrentDocument(self.searchLineBoxInEditor.text(),
-												  position = 0)
-		cursor.beginEditBlock()
+		# old and new words should be valid
 		oldWord = self.searchLineBoxInEditor.text()
 		newWord = self.replaceLineEdit.text()
 		if oldWord and newWord:
-			cursor = self.replaceNextText(cursor, newWord)
-			self.editor.setTextCursor(cursor)
+			# find cursor that includes valid text
+			cursor = self.searchTextInCurrentDocument(self.searchLineBoxInEditor.text(),
+													  position = self.highlightCursor.selectionStart())
+			# replace the cursor with new text
+			self.replaceNextText(cursor, newWord)
+			# find next word
 			self.nextSearchedWord()
-		cursor.endEditBlock()
 
 
 	def replaceNextText(self, cursor, newWord):
+		# cursor is not null and has selection. Also new word should be valid
 		if newWord and cursor.isNull() is False and cursor.hasSelection():
 			cursor.beginEditBlock()
 			cursor.insertText(newWord)
@@ -213,7 +232,9 @@ class TextEditorWidget(QtWidgets.QWidget):
 
 
 	def searchWord(self, text):
+		# search word and update current text
 		self.rule.pattern = re.compile(text, re.IGNORECASE)
+		# update editor style
 		self.updateEditor()
 		if text:
 			cursor = self.searchTextInCurrentDocument(self.searchLineBoxInEditor.text(),
@@ -227,6 +248,7 @@ class TextEditorWidget(QtWidgets.QWidget):
 
 
 	def showSearch(self):
+		# show search widget
 		self.searchWidgetInEditor.show()
 		text = self.editor.textCursor().selectedText()
 		self.searchLineBoxInEditor.setText(text)
@@ -234,9 +256,11 @@ class TextEditorWidget(QtWidgets.QWidget):
 
 
 	def updateEditor(self):
+		# update editor syntax highlighting
 		charCount = self.editor.document().characterCount()
 		self.editor.document().contentsChange.emit(0, 0, charCount)
 
 
 	def updateHighlightCursor(self):
+		# when cursor position is changed update highlight cursor
 		self.highlightCursor = self.editor.textCursor()

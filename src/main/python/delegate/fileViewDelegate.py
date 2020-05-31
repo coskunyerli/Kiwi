@@ -13,7 +13,9 @@ class FileViewDelegate(QtWidgets.QStyledItemDelegate):
 
 
 	def paint(self, painter, option, index):
+		# get object icon in pixmap
 		pixmap = index.model().data(index, role = QtCore.Qt.DecorationRole).pixmap(QtCore.QSize(40, 40))
+		# get object data array
 		dataArr = index.data()
 		displayName = dataArr[2]
 		isFixed = dataArr[3]
@@ -23,6 +25,7 @@ class FileViewDelegate(QtWidgets.QStyledItemDelegate):
 		childCount = dataArr[7]
 		createDate = dataArr[8]
 
+		#get path of object
 		path = index.model().data(index, role = QtCore.Qt.WhatsThisRole)
 
 		painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
@@ -31,19 +34,23 @@ class FileViewDelegate(QtWidgets.QStyledItemDelegate):
 		leftMargin = 16
 		lineRect = QtCore.QRect(QtCore.QPoint(leftMargin, rect.bottom()),
 								QtCore.QSize(rect.width() - 2 * leftMargin, 1))
+		# draw border-bottom of item
 		painter.fillRect(lineRect, QtGui.QColor('#45464A'))
-
+		# if has focus of selection, changed background color
 		if option.state & QtWidgets.QStyle.State_HasFocus:
 			painter.fillRect(rect, QtGui.QBrush(QtGui.QColor('#C9942F')))
 		elif option.state & QtWidgets.QStyle.State_Selected:
 			painter.fillRect(rect, QtGui.QBrush(QtGui.QColor('#353639')))
 
+
+		#draw object icon to the left of view
 		iconSize = QtCore.QSize(16, 16)
 		iconRect = QtCore.QRect(
 				rect.topLeft() + QtCore.QPoint(leftMargin, (rect.height() - iconSize.height()) / 2.0),
 				iconSize)
 		painter.drawPixmap(iconRect, pixmap, pixmap.rect())
 
+		# save painter and update painter parameters
 		painter.save()
 		painter.setPen(QtGui.QColor('#D3D7E3'))
 		font = painter.font()
@@ -54,6 +61,7 @@ class FileViewDelegate(QtWidgets.QStyledItemDelegate):
 				rect.topLeft(),
 				QtCore.QSize(0, 0))
 		if not index.model().flags(index) & ItemFlags.ItemIsSoftLink:
+			# draw pinned icon
 			if isFixed:
 				pinRect = QtCore.QRect(
 						rect.topLeft() + QtCore.QPoint(4, 4),
@@ -61,8 +69,9 @@ class FileViewDelegate(QtWidgets.QStyledItemDelegate):
 				pinPixmap = QtGui.QPixmap(core.fbs.icons('pin.png'))
 				painter.drawPixmap(pinRect, pinPixmap, pinPixmap.rect())
 
-		if dataType == FileType.FOLDER:
 
+		if dataType == FileType.FOLDER:
+			# draw child number for folder object
 			text = '%d Items' % childCount
 			folderItemRect = QtCore.QRect(
 					rect.bottomRight() - QtCore.QPoint(fontMetric.width(text) + 4, fontMetric.height() + 4),
@@ -71,6 +80,7 @@ class FileViewDelegate(QtWidgets.QStyledItemDelegate):
 			painter.drawText(folderItemRect, QtCore.Qt.AlignLeft, text)
 
 		elif dataType == FileType.FILE:
+			# draw last update date and create date for file object
 			if createDate is not None:
 				lastUpdateInString = f'{static.passedTime(lastUpdate)} ago'
 				lastUpdateWidth = fontMetric.width(lastUpdateInString)
@@ -91,11 +101,13 @@ class FileViewDelegate(QtWidgets.QStyledItemDelegate):
 		painter.save()
 		fontMetric = painter.fontMetrics()
 		painter.setPen(QtGui.QColor('#D3D7E3'))
+
+		#draw displayed text for the object
 		textRect = QtCore.QRect(iconRect.right() + 8, rect.top(), rect.right() - (iconRect.right() + 8), rect.height())
 		elidedDisplayText = fontMetric.elidedText(displayName, QtCore.Qt.ElideRight, textRect.width())
 		painter.drawText(textRect, QtCore.Qt.AlignVCenter, elidedDisplayText)
 		painter.restore()
-
+		# draw path is it is not None
 		if path is not None:
 			painter.save()
 			painter.setPen(QtGui.QColor('#888'))

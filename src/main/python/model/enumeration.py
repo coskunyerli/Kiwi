@@ -2,6 +2,7 @@ from static import increment_str
 
 
 class BaseEnumeration(object):
+	# this is enumeration object, decide what type of symbol is used after press enter in text editor
 	def __init__(self):
 		self.name = self.__class__.__name__
 

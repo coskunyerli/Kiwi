@@ -10,12 +10,13 @@ class Highlighter(QtGui.QSyntaxHighlighter):
 	def __init__(self, editor, patterns):
 		super(Highlighter, self).__init__(editor.document())
 		self.editor = editor
-		self.updateHighlighterRules(patterns)
+		self.__updateHighlighterRules(patterns)
 		self.editor.document().blockCountChanged.connect(self.setEnumaration)
 		self.enumClasses = get_classes(model.enumeration.__name__)
 
 
 	def highlightBlock(self, text):
+		# highlight of current block
 		for rule in self.highlightingRules:
 			matches = rule.search(text)
 			for match in matches:
@@ -46,14 +47,18 @@ class Highlighter(QtGui.QSyntaxHighlighter):
 							del enum
 
 
-	def updateHighlighterRules(self, patterns):
+	def __updateHighlighterRules(self, patterns):
 		self.patterns = patterns
 		self.highlightingRules = []
 		for style in self.patterns:
-			rule = HighlightingRule(self.editor)
-			rule.pattern = re.compile(style.pattern)
-			rule.style = style
-			self.highlightingRules.append(rule)
+			self.appendHighlightRule(style)
+
+
+	def appendHighlightRule(self, style):
+		rule = HighlightingRule(self.editor)
+		rule.pattern = re.compile(style.pattern)
+		rule.style = style
+		self.highlightingRules.append(rule)
 
 
 class HighlightingRule(object):

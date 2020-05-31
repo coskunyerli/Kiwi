@@ -54,6 +54,7 @@ class ListView(QtWidgets.QListView):
 		dropIndex = mimeData.colorData()
 		if dropIndex and dropIndex.isValid() is True:
 			hoverIndex = self.indexAt(event.pos())
+			# if hover data is equal drop data, drop action is not permitted. it is invalid operation
 			dataIsEqual = hoverIndex.data(QtCore.Qt.UserRole) == dropIndex.data(QtCore.Qt.UserRole)
 			if hoverIndex.isValid() and dataIsEqual is True:
 				self.dragTimer.stop()
@@ -61,40 +62,10 @@ class ListView(QtWidgets.QListView):
 				event.ignore()
 			else:
 				super(ListView, self).dragMoveEvent(event)
-
+			# start drag timer. if drag timer is timeout, signal is emit
 			if hoverIndex != self.__currentDragIndex and dataIsEqual is False:
 				self.__currentDragIndex = hoverIndex
 				self.dragTimer.start(self.timerTime)
 
 		else:
 			super(ListView, self).dragMoveEvent(event)
-#
-#
-# def rename(self):
-# 	index = self.currentIndex()
-# 	model = self.model()
-# 	newText, result = QtWidgets.QInputDialog.getText(self, 'Rename File', 'New file name',
-# 													 QtWidgets.QLineEdit.Normal)
-# 	if result:
-# 		model.setData(index, newText)
-#
-#
-# def setPassword(self):
-# 	index = self.currentIndex()
-# 	password, result = QtWidgets.QInputDialog.getText(self, 'Set Password', 'Enter a password',
-# 													  QtWidgets.QLineEdit.Password)
-# 	if password and result and index.isValid():
-# 		data = index.internalPointer()
-# 		data.isLocked = True
-#
-#
-# def delete(self):
-# 	self.mainWidget.delete()
-#
-#
-# def newFile(self):
-# 	self.mainWidget.newFile()
-#
-#
-# def newFolder(self):
-# 	self.mainWidget.newFolder()

@@ -1,6 +1,6 @@
 import datetime
 import os
-
+import logging as log
 import PySide2.QtWidgets as QtWidgets, PySide2.QtGui as QtGui, PySide2.QtCore as QtCore
 import core
 from enums import DataType
@@ -26,14 +26,24 @@ class TextEditorDialog(QtWidgets.QDialog, ConfigurationService):
 
 		self.autoSaveTimer = QtCore.QTimer(self)
 		self.autoSaveTimer.setSingleShot(True)
+		# add pattern if disable style is not none
 		if disableStyle is False:
-			self.styleItems = list(map(lambda item: StyleItem.create(item), self.configuration().get('patterns')))
+			self.styleItems = self.createStyleItem(self.configuration().get('patterns', []))
 		else:
 			self.styleItems = []
 		self.textEditorWidget.setStyleItems(self.styleItems)
 		self.initialize()
 		self.initializeShortcuts()
 		self.initSignalsAndSlots()
+		self.setupEditor()
+
+
+	def setupEditor(self):
+		font = QtGui.QFont()
+		font.setFamily('Menlo')
+		font.setFixedPitch(True)
+		font.setPointSize(12)
+		self.textEditorWidget.editor.setFont(font)
 
 
 	def initializeShortcuts(self):
@@ -42,10 +52,6 @@ class TextEditorDialog(QtWidgets.QDialog, ConfigurationService):
 		self.saveShortcut.activated.connect(self.save)
 		self.saveShortcut.setContext(QtCore.Qt.WidgetShortcut)
 
-
-	# self.escapeShortcut = QtWidgets.QShortcut(self)
-	# self.escapeShortcut.setKey(QtGui.QKeySequence.Close)
-	# self.escapeShortcut.activated.connect(self.close)
 
 	def initSignalsAndSlots(self):
 		self.textEditorWidget.editor.document().modificationChanged.connect(self.updateDialogTitle)
@@ -93,32 +99,48 @@ class TextEditorDialog(QtWidgets.QDialog, ConfigurationService):
 
 	def __save(self, filename, path):
 		self.autoSaveTimer.stop()
-		with open(path, 'w') as file:
-			file.write(self.textEditorWidget.editor.toHtml())
+		try:
+			with open(path, 'w') as file:
+				file.write(self.textEditorWidget.editor.toHtml())
+		except Exception as e:
+			log.error(f'Text file is not saved successfully. Path is {path}. Exception is {e}')
+			return False
 
 		self.setModified(False)
-		newFile = FileData(filename, path)
-		newFile.setType(DataType.STYLEDATA)
-		self.currentTextData = newFile
-		self.fileSaved.emit(newFile)
+		if self.currentTextData is None:
+			newFile = FileData(filename, path)
+			newFile.setType(DataType.STYLEDATA)
+			self.currentTextData = newFile
+		self.fileSaved.emit(self.currentTextData)
+
 		return True
 
 
 	def open(self):
 		if self.currentTextData is not None:
-			with open(self.currentTextData.path) as file:
-				content = file.read()
-				if content == '':
-					self.textEditorWidget.editor.document().blockSignals(True)
-					self.textEditorWidget.editor.clear()
-					self.textEditorWidget.editor.document().blockSignals(False)
-				else:
-					self.textEditorWidget.editor.setHtml(content)
-		super(TextEditorDialog, self).open()
+			try:
+				with open(self.currentTextData.path) as file:
+					content = file.read()
+					if content == '':
+						self.textEditorWidget.editor.document().blockSignals(True)
+						self.textEditorWidget.editor.clear()
+						self.textEditorWidget.editor.document().blockSignals(False)
+					else:
+						self.textEditorWidget.editor.setHtml(content)
+
+				super(TextEditorDialog, self).open()
+			except FileNotFoundError as e:
+				log.error(f'File does not exists in text editor dialog. Path is {self.currentTextData.path}.')
+			except Exception as e:
+				log.error(f'Error occurred while open data in text editor dialog. Path is {self.currentTextData.path}. '
+						  f'Exception is {e}')
+		else:
+			log.error('Current data is None in text editor dialog. Dialog can not be open')
 
 
 	def reject(self):
 		if self.isModified() is True:
+			# do not show warning message if current data is valid
 			if self.currentTextData is None:
 				ret = QtWidgets.QMessageBox.warning(self, "Application",
 													"The document hasdasas been modified.\n"
@@ -130,7 +152,7 @@ class TextEditorDialog(QtWidgets.QDialog, ConfigurationService):
 
 			if ret == QtWidgets.QMessageBox.Yes:
 				# save the session before quit
-				if not self.save():
+				if self.save() is False:
 					# if not saved, not closed
 					return
 
@@ -148,7 +170,20 @@ class TextEditorDialog(QtWidgets.QDialog, ConfigurationService):
 
 
 	def updateDialogTitle(self, change):
+		# update window title
 		if change and self.windowTitle().find('*') == -1:
 			self.setWindowTitle('%s*' % self.windowTitle())
 		elif not change and self.windowTitle().find('*') != -1:
 			self.setWindowTitle('%s' % self.windowTitle()[:-1])
+
+
+	def createStyleItem(self, patterns):
+		# create style item
+		patternList = []
+		for styleItemInDict in patterns:
+			try:
+				styleItem = StyleItem.create(styleItemInDict)
+				patternList.append(styleItem)
+			except ValueError as e:
+				log.warning(e)
+		return patternList

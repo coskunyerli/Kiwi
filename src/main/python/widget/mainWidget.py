@@ -14,7 +14,7 @@ from PySide2 import QtCore, QtGui, QtWidgets
 from delegate.dataViewDelegate import DataViewDelegate
 from delegate.fileViewDelegate import FileViewDelegate
 from exceptions.invalidListModelItemException import InvalidListModelItemException
-from factory.dataDialogFactory import DataDialogFactory
+from factory.dataViewDialogFactory import DataViewDialogFactory
 from factory.dataFactory import DataFactory
 from itemmodel.dataModel import DataModel
 from itemmodel.listTreeModel import ListTreeModel
@@ -248,9 +248,10 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 		self.fileListView.setDragEnabled(True)
 		self.breadCrumb.setPath(self.fileListProxyModel.currentFolder())
 
+		# if list is not empty load the first one
 		if self.fileListProxyModel.isEmpty() is False:
 			self.fileListView.setCurrentIndex(self.fileListProxyModel.index(0))
-
+		# check recursive search flag
 		self.flattenSearchCheckbox.setChecked(self.fileListProxyModel.hasRecursiveSearch())
 
 
@@ -258,7 +259,7 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 		self.newFileButton.clicked.connect(self.newFile)
 		self.newFolderButton.clicked.connect(self.newFolder)
 		self.fileListView.currentIndexChanged.connect(self.loadFile)
-		self.fileListView.dragTimeout.connect(self.updateCurrentFolder)
+		self.fileListView.dragTimeout.connect(self.updateCurrentFolderWithDragTimeout)
 
 		self.enterFolderShortcut.activated.connect(self.changeNextFolder)
 		self.fileListView.doubleClicked.connect(self.changeNextFolder)
@@ -285,12 +286,13 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 
 
 	def updateRecursiveSearchFlag(self, value):
+		# update recursive flag when
 		self.fileListProxyModel.setRecursiveSearch(bool(value))
 
 
 	def openData(self, index):
 		data = index.data(QtCore.Qt.UserRole)
-		dialog = DataDialogFactory.create(data, self)
+		dialog = DataViewDialogFactory.create(data, self)
 		if dialog is not None:
 			qss = core.fbs.qss('dataShowDialog.qss')
 			if qss is not None:
@@ -299,6 +301,7 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 				log.warning('dataShowDialog.qss is not loaded successfully')
 			dialog.open()
 		else:
+			log.warning(f'Unsupported data. Data {data} is not viewed.')
 			QtWidgets.QMessageBox.warning(self, 'Unsupported Data', 'Data is not upsupported')
 
 
@@ -313,7 +316,8 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 	def dropItemToBreadCrumb(self, fileItemList, mimeData):
 		parentIndex = self.fileTreeModel.getItemIndex(fileItemList)
 		if self.fileTreeModel.dropMimeData(mimeData, QtCore.Qt.MoveAction, -1, -1, parentIndex) is False:
-			log.warning('Item is not dropped successfully to the bread crumb')
+			log.warning(f'Item is not dropped successfully to the bread crumb. Parent is {fileItemList}. '
+						f'Item is {mimeData.colorData()}')
 
 
 	def pinnedListModelFileItem(self):
@@ -328,14 +332,13 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 
 
 	def searchFileListView(self):
+		# set search text to the file list proxy model
 		text = self.searchLineBoxInFileList.text()
 		self.fileListProxyModel.setSearchText(text)
-		return
 
-
-	# self.fileListProxyModel.setFilterRegExp(text)
 
 	def searchDataView(self, text):
+		# set search text to the data proxy model
 		self.dataProxyModel.setFilterRegExp(text)
 
 
@@ -354,9 +357,10 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 			self.fileListView.setCurrentIndex(index)
 		# Save root file into disc
 		except InvalidListModelItemException as e:
-			log.warning(e)
+			log.error(e)
 		except Exception as e:
-			log.warning(f'Data is not inserted successfully, Exception is {e}')
+			log.error(f'Data is not inserted successfully. Display name is {displayName}. New File is {newFile}.'
+					  f' Exception is {e}')
 
 
 	def newFolder(self):
@@ -375,9 +379,10 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 			self.fileListView.setCurrentIndex(index)
 		# Save root file into disc
 		except InvalidListModelItemException as e:
-			log.warning(e)
+			log.error(e)
 		except Exception as e:
-			log.warning(f'Data is not inserted successfully, Exception is {e}')
+			log.error(f'Data is not inserted successfully. Display name is {displayName}. New Folder is {newFolder}.'
+					  f' Exception is {e}')
 
 
 	def createNewTextFile(self):
@@ -385,6 +390,8 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 			textEditorDialog = TextEditorDialog(self)
 			textEditorDialog.fileSaved.connect(self.insertDataToDataModel)
 			textEditorDialog.open()
+		else:
+			log.warning('Current data model is empty. Therefore new text file does not created')
 
 
 	def createNewFile(self):
@@ -393,9 +400,15 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 			value = dialog.exec_()
 			if value == QtWidgets.QDialog.Accepted and dialog.data.isValid():
 				data = dialog.data
-				fileData = DataFactory.fileDataFromDialogData(data)
+				fileData = DataFactory.fileDataFromFilePickerDialog(data)
 				if fileData is not None:
 					self.insertDataToDataModel(fileData)
+				else:
+					log.warning(f'Data {data} from file picker is not converted to FileData while creating new file')
+			else:
+				log.warning(f'Invalid file is selected from file picker while creating new file')
+		else:
+			log.warning('Current data model is empty. Therefore new file does not created')
 
 
 	def updateDataWidget(self):
@@ -407,18 +420,23 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 
 
 	def saveDataModel(self):
+		# save current file in data model when data model changed
 		self.dataListModelService().save(self.dataModel.listModelFileItem())
 
 
 	def insertDataToDataModel(self, dataModelItem):
+		# insert new file data to the data model
 		listFileItem = self.dataModel.listModelFileItem()
 		childNumber = listFileItem.childNumber()
-
-		index = self.fileListProxyModel.index(childNumber)
-		_, _ = self.fileListProxyModel.beginEditData(index)
-		self.dataModel.insertData(dataModelItem)
-		self.dataListModelService().save(self.dataModel.listModelFileItem())
-		self.fileListProxyModel.endEditData(index)
+		if childNumber is not None:
+			index = self.fileListProxyModel.index(childNumber)
+			_, _ = self.fileListProxyModel.beginEditData(index)
+			self.dataModel.insertData(dataModelItem)
+			self.dataListModelService().save(self.dataModel.listModelFileItem())
+			self.fileListProxyModel.endEditData(index)
+		else:
+			log.warning(f'Child number is none of file item {listFileItem} while insert new data to data model at '
+						f'insertDataToDataModel() method')
 
 
 	def changePrevFolder(self):
@@ -429,6 +447,8 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 			if childNumber is not None:
 				self.changeFolder(parent)
 				self.fileListView.setCurrentIndex(self.fileListProxyModel.index(childNumber))
+			else:
+				log.warning(f'Child number is none of folder {currentFolder} in changePrevFolder() method')
 
 
 	def changeNextFolder(self):
@@ -443,11 +463,16 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 
 	def changeFolder(self, listModelFolderItem):
 		if isinstance(listModelFolderItem, ListModelFolderItem):
+			# update current folder
 			self.fileListProxyModel.setCurrentFolder(listModelFolderItem)
 			self.updateBreadCrumb()
+		else:
+			log.warning(f'Data {listModelFolderItem} is file item. Therefore this data is not be current '
+						f'folder for proxy model')
 
 
 	def clickedBreadCrumb(self, folder):
+		# update current folder with clicked bread crumb item
 		self.changeFolder(folder)
 		self.fileListView.setCurrentIndex(QtCore.QModelIndex())
 
@@ -455,10 +480,14 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 	def updateBreadCrumb(self):
 		listModelFileItem = self.fileListProxyModel.sourceFolder()
 		if listModelFileItem.type == FileType.FOLDER:
+			# update bread crumb path
 			self.breadCrumb.setPath(listModelFileItem)
+		else:
+			log.warning(f'Data {listModelFileItem} is not set to the bread crumb. Since it is file item')
 
 
-	def updateCurrentFolder(self, index):
+	def updateCurrentFolderWithDragTimeout(self, index):
+		# update current folder after drag timeout
 		if index.isValid() is True:
 			fileListItem = index.data(QtCore.Qt.UserRole)
 			if fileListItem.type == FileType.FOLDER:
@@ -466,9 +495,11 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 
 
 	def loadFile(self, index):
+		# if index is not valid set None, this means show nothing
 		if index.isValid() is False:
 			self.dataModel.setListModelFileItem(None)
 		else:
+			# if item is folder show nothing
 			fileListItem = index.data(QtCore.Qt.UserRole)
 			if fileListItem.type == FileType.FILE:
 				self.dataListModelService().load(fileListItem)
@@ -479,18 +510,20 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 
 	def deleteListModelFileItem(self):
 		index = self.fileListView.currentIndex()
-
+		# if index is not valid, do nothing
 		if index.isValid() is False:
-			return
-		if self.fileListView.model().flags(index) & ItemFlags.ItemIsSoftLink:
 			return
 		result = QtWidgets.QMessageBox.warning(self, 'Are you sure?', 'Item will be deleted',
 											   QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
 		if result == QtWidgets.QMessageBox.No:
 			return
+
 		if self.fileListProxyModel.flags(index) & ItemFlags.ItemIsDeletable:
 			listModelFileItem = self.fileListProxyModel.deleteRow(index)
-			self.dataListModelService().deleteListModelFileItem(listModelFileItem)
+			if self.dataListModelService().deleteListModelFileItem(listModelFileItem) is False:
+				log.warning(f'Error occurred while delete file from storage at data list model service. '
+							f'Parent file is {listModelFileItem.path()}.')
+
 			if self.fileListProxyModel.isEmpty() is False:
 				index = self.fileListProxyModel.index(0)
 				self.fileListView.setCurrentIndex(index)
@@ -508,6 +541,7 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 
 
 	def renameDataModelItem(self):
+		# this method remove data file from file item
 		index = self.dataView.currentIndex()
 		if index.isValid():
 			data = index.data(QtCore.Qt.UserRole)
@@ -526,15 +560,6 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 		preferences = Preferences(self, None)
 		preferences.open()
 
-
-	#
-	#
-	# def closePreferences(self, patterns):
-	# 	self.styleItems = patterns
-	# 	self.highlighter.updateHighlighterRules(patterns)
-	# 	self.highlighter.highlightingRules.append(self.rule)
-	# 	self.updateEditor()
-	# 	self.saveItemsStyle()
 
 	def showRightClickPopupForDataView(self, pos):
 		if self.dataModel.listModelFileItem() is None or self.dataModel.listModelFileItem().type == FileType.FOLDER:
@@ -628,14 +653,11 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 			self.addTagListModelFileItem()
 
 
-	# elif action == passwordItem:
-	# 	self.setPassword()
-
 	def renameListModelFileItem(self):
 		index = self.fileListView.currentIndex()
 		model = self.fileListProxyModel
 		newText, result = QtWidgets.QInputDialog.getText(self, 'Rename File', 'New file name', text = index.data()[1])
-		if result:
+		if result and newText:
 			data, old = model.beginEditData(index)
 			data.setName(newText)
 			data.setDisplayName(newText)
@@ -652,11 +674,3 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 			model.beginEditData(index)
 			listModelFileItem.tags = set(filter(lambda item: item != '', newTagText.split(';')))
 			model.endEditData(index)
-# def setPassword(self):
-# 	return
-# 	index = self.fileListView.currentIndex()
-# 	password, result = QtWidgets.QInputDialog.getText(self, 'Set Password', 'Enter a password',
-# 													  QtWidgets.QLineEdit.Password)
-# 	if password and result and index.isValid():
-# 		data = index.internalPointer()
-# 		data.isLocked = True

@@ -20,6 +20,7 @@ class FileListModelProxy(QtCore.QAbstractProxyModel):
 		hoverIndex = index
 		sourceIndex = self.mapToSource(hoverIndex)
 		fileItemList = self.sourceModel().getFileItem(sourceIndex)
+		# if fileItemList item is equal to source folder or in its child, drop is not enabled
 		if index.isValid() is True and fileItemList.type == FileType.FOLDER and (
 				self.sourceFolder() == fileItemList or fileItemList.contains(lambda item: item == self.sourceFolder(),
 																			 recursive = True)):
@@ -39,10 +40,12 @@ class FileListModelProxy(QtCore.QAbstractProxyModel):
 
 
 	def hasRecursiveSearch(self):
+		# check that has recursive search or not
 		return self.__recursiveSearch
 
 
 	def setRecursiveSearch(self, res):
+		# update recursive search flag and update search
 		if self.hasRecursiveSearch() != res:
 			self.__recursiveSearch = res
 			if self.searchText():
@@ -50,6 +53,7 @@ class FileListModelProxy(QtCore.QAbstractProxyModel):
 
 
 	def isEmpty(self):
+		# check that current folder is empty or not
 		if self.currentFolder() is not None:
 			return self.currentFolder().isEmpty()
 		else:
@@ -67,6 +71,8 @@ class FileListModelProxy(QtCore.QAbstractProxyModel):
 
 
 	def setCurrentFolder(self, folder):
+		# update current folder and update layout
+		# all folder is wrapped in nask folder
 		if folder is not None and folder.type == FileType.FOLDER:
 			maskFolder = MaskFolderItem(folder, folder.name(), None, folder.displayName, folder.isFixed)
 			for child in folder.childItems:
@@ -89,16 +95,12 @@ class FileListModelProxy(QtCore.QAbstractProxyModel):
 
 
 	def dropMimeData(self, mimeData, action, row, column, parent):
+		# if parent is not valid set parentIndex as index of sourceFolder
 		if parent.isValid() is False:
 			sourceParent = self.sourceModel().getItemIndex(self.sourceFolder())
 		else:
 			sourceParent = self.mapToSource(parent)
-		# print(sourceParent, 'proxy')
-		# print(sourceParent, 'proxy')
 		return self.sourceModel().dropMimeData(mimeData, action, row, column, sourceParent)
-
-
-	# return super(FileListModelProxy, self).dropMimeData(mimeData, action, row, column, parent)
 
 	def sourceFolder(self):
 		return self.currentFolder().sourceFolder()
@@ -162,25 +164,6 @@ class FileListModelProxy(QtCore.QAbstractProxyModel):
 		self.__updateIndices()
 		self.dataChanged.emit(topLeft, bottomRight, role)
 
-
-	# blockMedia = topLeft.data(QtCore.Qt.UserRole)
-	# # update proxy model if top left index is the sequence index otherwise just emit data changed signal
-	# if isinstance(blockMedia, SequenceBlockMedia):
-	# 	oldCount = self.rowCount()
-	# 	self.__updateIndices()
-	# 	if self.rowCount() < oldCount:
-	# 		self.__modelRemoved(QtCore.QModelIndex(), 0, self.rowCount())
-	# 	elif self.rowCount() > oldCount:
-	# 		self.__modelInserted(QtCore.QModelIndex(), 0, self.rowCount())
-	# 	else:
-	# 		proxyLeft = self.mapFromSource(topLeft)
-	# 		proxyRight = self.mapFromSource(bottomRight)
-	# 		self.dataChanged.emit(proxyLeft, proxyRight, roles)
-	# else:
-	# 	proxyLeft = self.mapFromSource(topLeft)
-	# 	proxyRight = self.mapFromSource(bottomRight)
-	# 	self.dataChanged.emit(proxyLeft, proxyRight, roles)
-
 	def index(self, row, column = 0, parent = QtCore.QModelIndex()):
 		if parent.isValid() is False:
 			return self.createIndex(row, column, None)
@@ -190,14 +173,17 @@ class FileListModelProxy(QtCore.QAbstractProxyModel):
 
 
 	def setSearchText(self, searchText):
+		# update search text
 		self.beginResetModel()
 		self.__searchText = searchText
 		if searchText:
+			# create mask folder, file contains searchText
 			maskFolder = MaskFolderItem(self.sourceFolder(), self.sourceFolder().name(), None)
 			childItems = self.sourceFolder().find(lambda item: self.__searchItem(searchText, item),
 												  recursive = self.hasRecursiveSearch())
 			for child in childItems:
 				maskFolder.append(child)
+			# update indices
 			self.__currentFolder = maskFolder
 			self.__updateIndices()
 		else:
@@ -271,296 +257,3 @@ class FileListModelProxy(QtCore.QAbstractProxyModel):
 			self.sourceToProxy[sourceIndex] = proxyIndex
 			# every proxy index has source index except for has same text sequence block media. just top sequence block media
 			self.proxyToSource[proxyIndex] = sourceIndex
-
-
-"""
-import PySide2.QtCore as QtCore
-from model.proxy.data import __Data__
-from model.proxy.index import __Index__
-from model.textBlockMedia import SequenceBlockMedia, ShotBlockMedia
-
-
-class ShotSequenceProxyModel(QtCore.QAbstractProxyModel):
-	# info: this is not used.
-	def __init__(self, parent = None):
-		super(ShotSequenceProxyModel, self).__init__(parent)
-		self.sourceToProxy = {}
-		self.proxyToSource = {}
-		self.sequenceText = {}
-		self.__updatedColumnIndices = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-
-		self.__rootIndex = __Index__(QtCore.QModelIndex())
-		self.sourceModelChanged.connect(self.__updateIndices)
-
-
-	@property
-	def undoCommandAdded(self):
-		return self.sourceModel().undoCommandAdded
-
-
-	def stopMerging(self):
-		return self.sourceModel().stopMerging()
-
-
-	def head(self, text):
-		# return the head of sequence block media given text
-		__data__ = self.sequenceText.get(text)
-		if __data__ is not None:
-			return __data__.head()
-		else:
-			return None
-
-
-	def getBlockMediaWithIndex(self, blockIndex):
-		return self.sourceModel().getBlockMediaWithIndex(blockIndex)
-
-
-	def getIndexWithBlockIndex(self, blockIndex):
-		index = self.sourceModel().getIndexWithBlockIndex(blockIndex)
-		return self.mapFromSource(index)
-
-
-	def getIndex(self, media):
-		index = self.sourceModel().getIndex(media)
-		return self.mapFromSource(index)
-
-
-	def getBlockMedia(self, index):
-		sourceIndex = self.mapToSource(index)
-		return self.sourceModel().getBlockMedia(sourceIndex)
-
-
-	def setData(self, index, func, role = QtCore.Qt.EditRole):
-		sourceIndex = self.mapToSource(index)
-		return self.sourceModel().setData(sourceIndex, func, role)
-
-
-	def __updateIndices(self):
-		self.proxyToSource.clear()
-		self.sourceToProxy.clear()
-		self.sequenceText.clear()
-		self.__rootIndex = __Index__(QtCore.QModelIndex())
-		self.__fillTheIndices(QtCore.QModelIndex())
-
-
-	def __fillTheIndices(self, sourceParentIndex):
-		for sourceRow in range(self.sourceModel().rowCount(sourceParentIndex)):
-			sourceIndex = self.sourceModel().index(sourceRow, 0, sourceParentIndex)
-			blockMedia = sourceIndex.data(QtCore.Qt.UserRole)
-			self.__fillColumn(sourceRow, sourceRow, sourceParentIndex)
-			if blockMedia.childCount() > 0:
-				self.__fillTheIndices(sourceIndex)
-
-			self.__updateName(sourceIndex.siblingAtColumn(2))
-
-
-	def __fillColumn(self, sourceRow, proxyRow, sourceParentIndex):
-		for column in self.__updatedColumnIndices:
-			sourceIndex = self.sourceModel().index(sourceRow, column, sourceParentIndex)
-			if sourceParentIndex.isValid() is False:
-				data = None
-			else:
-				data = sourceParentIndex.data(QtCore.Qt.UserRole)
-
-			proxyIndex = self.createIndex(proxyRow, column, data)
-			# every source index has to have a proxy index
-
-			self.sourceToProxy[sourceIndex] = proxyIndex
-			# every proxy index has source index except for has same text sequence block media. just top sequence block media
-			self.proxyToSource[proxyIndex] = sourceIndex
-
-
-	def setSourceModel(self, model):
-		model.modelReset.connect(self.__modelReset)
-		model.rowsInserted.connect(self.__modelInserted)
-		model.rowsRemoved.connect(self.__modelRemoved)
-		model.dataChanged.connect(self.__dataChanged)
-		super(ShotSequenceProxyModel, self).setSourceModel(model)
-
-
-	def __modelReset(self):
-		self.beginResetModel()
-		self.__updateIndices()
-		self.endResetModel()
-
-
-	def __modelInserted(self, parent, first, last):
-		# if parent.isValid():
-		# 	proxyParent = self.mapFromSource(parent)
-		# else:
-		self.beginInsertRows(QtCore.QModelIndex(), 0, self.rowCount())
-		self.__updateIndices()
-		self.endInsertRows()
-
-
-	def __modelRemoved(self, parent, first, last):
-		# if parent.isValid():
-		# 	pass
-		# else:
-		proxyParent = self.mapFromSource(parent)
-		self.beginRemoveRows(QtCore.QModelIndex(), 0, self.rowCount(proxyParent))
-		self.__updateIndices()
-		self.endRemoveRows()
-
-
-	def __dataChanged(self, topLeft, bottomRight, roles):
-		blockMedia = topLeft.data(QtCore.Qt.UserRole)
-		# update proxy model if top left index is the sequence index otherwise just emit data changed signal
-		if isinstance(blockMedia, SequenceBlockMedia):
-			oldCount = self.rowCount()
-			self.__updateIndices()
-			if self.rowCount() < oldCount:
-				self.__modelRemoved(QtCore.QModelIndex(), 0, self.rowCount())
-			elif self.rowCount() > oldCount:
-				self.__modelInserted(QtCore.QModelIndex(), 0, self.rowCount())
-			else:
-				proxyLeft = self.mapFromSource(topLeft)
-				proxyRight = self.mapFromSource(bottomRight)
-				self.dataChanged.emit(proxyLeft, proxyRight, roles)
-		else:
-			proxyLeft = self.mapFromSource(topLeft)
-			proxyRight = self.mapFromSource(bottomRight)
-			self.dataChanged.emit(proxyLeft, proxyRight, roles)
-
-
-	def __updateName(self, index):
-		blockMedia = index.data(QtCore.Qt.UserRole)
-		if isinstance(blockMedia, SequenceBlockMedia):
-			text = index.data().lower()
-			if text not in self.sequenceText:
-				__data__ = __Data__(index.siblingAtColumn(1).data())
-				self.sequenceText[text] = __data__
-			else:
-				__data__ = self.sequenceText[text]
-
-			__data__.setSiblingData(blockMedia, len(__data__.siblings()) + 1)
-
-			number = len(__data__.items()) + 1
-			for child in blockMedia.children():
-				if child.isChanged() is False:
-					n = number
-					s = ''
-					number += 1
-				else:
-					n = child.number()
-					s = child.suffix()
-
-				__data__.setItem(child, (n, s))
-
-
-	def mapToSource(self, proxyIndex):
-		return self.proxyToSource.get(proxyIndex, QtCore.QModelIndex())
-
-
-	def mapFromSource(self, sourceIndex):
-		return self.sourceToProxy.get(sourceIndex, QtCore.QModelIndex())
-
-
-	def columnCount(self, parent = QtCore.QModelIndex()):
-		return self.sourceModel().columnCount(parent)
-
-
-	def rowCount(self, parent = QtCore.QModelIndex()):
-		sourceParentIndex = self.mapToSource(parent)
-		return self.sourceModel().rowCount(sourceParentIndex)
-
-
-	def parent(self, index = QtCore.QModelIndex()):
-		if index.isValid() is False:
-			return QtCore.QModelIndex()
-		sourceParentBlockMedia = index.internalPointer()
-		sourceParentIndex = self.sourceModel().getIndex(sourceParentBlockMedia)
-
-		return self.mapFromSource(sourceParentIndex)
-
-
-	def data(self, index, role = QtCore.Qt.DisplayRole):
-		sourceIndex = self.mapToSource(index)
-		if role == QtCore.Qt.DisplayRole:
-			if index.column() == 1:
-				blockMedia = index.data(QtCore.Qt.UserRole)
-				if isinstance(blockMedia, SequenceBlockMedia):
-					text = index.siblingAtColumn(2).data().lower()
-					__index__ = self.sequenceText[text]
-					return '%s (%s)' % (__index__.data(), __index__.siblings().get(blockMedia))
-				else:
-					return ShotBlockMedia.format(index.siblingAtColumn(7).data(), index.siblingAtColumn(8).data(),
-												 index.siblingAtColumn(9).data())
-			elif index.column() == 3:
-				parentIndex = index.parent()
-				if parentIndex.isValid() is True:
-					shotMedia = index.data(QtCore.Qt.UserRole)
-					if shotMedia.isChanged():
-						return True
-					# this is for shot
-					text = parentIndex.siblingAtColumn(2).data().lower()
-					__data__ = self.sequenceText[text]
-					return __data__.head().isChanged()
-				else:
-					blockMedia = index.data(QtCore.Qt.UserRole)
-					if isinstance(blockMedia, SequenceBlockMedia):
-						text = index.siblingAtColumn(2).data().lower()
-						__data__ = self.sequenceText[text]
-						return __data__.head().isChanged()
-
-			elif index.column() == 4:
-				# this is for shot
-				parentIndex = index.parent()
-				if parentIndex.isValid() is True:
-					text = parentIndex.siblingAtColumn(2).data().lower()
-					__data__ = self.sequenceText[text]
-					return __data__.head().isLocked()
-				else:
-					blockMedia = index.data(QtCore.Qt.UserRole)
-					if isinstance(blockMedia, SequenceBlockMedia):
-						text = index.siblingAtColumn(2).data().lower()
-						__data__ = self.sequenceText[text]
-						return __data__.head().isLocked()
-
-			elif index.column() == 7:
-				# this is for shot name
-				parentIndex = index.parent()
-				if parentIndex.isValid() is True:
-					text = parentIndex.siblingAtColumn(2).data().lower()
-					__data__ = self.sequenceText[text]
-					return __data__.data()
-
-			elif index.column() == 8:
-				# this is for shot number
-				blockMedia = index.data(QtCore.Qt.UserRole)
-				parentIndex = index.parent()
-				if parentIndex.isValid() is True:
-					text = parentIndex.siblingAtColumn(2).data().lower()
-					__data__ = self.sequenceText[text]
-					if blockMedia.isChanged() is False:
-						number, _ = __data__.items().get(blockMedia)
-						return number
-			elif index.column() == 9:
-				# this is for shot suffix
-				blockMedia = index.data(QtCore.Qt.UserRole)
-				parentIndex = index.parent()
-				if parentIndex.isValid() is True:
-					text = parentIndex.siblingAtColumn(2).data().lower()
-					__data__ = self.sequenceText[text]
-					if blockMedia.isChanged() is False:
-						_, suffix = __data__.items().get(blockMedia)
-						return suffix
-
-		elif role == QtCore.Qt.ForegroundRole:
-			return self.sourceModel().color(index)
-
-		return self.sourceModel().data(sourceIndex, role)
-
-
-	def index(self, row, column, parent = QtCore.QModelIndex()):
-		if parent.isValid() is False:
-			return self.createIndex(row, column, None)
-		else:
-			return self.createIndex(row, column, self.mapToSource(parent).internalPointer())
-
-
-	def headerData(self, section, orientation, role):
-		return self.sourceModel().headerData(section, orientation, role)
-
-
-"""

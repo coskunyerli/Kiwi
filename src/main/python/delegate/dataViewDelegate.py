@@ -1,9 +1,4 @@
-import os
-
-import core
 from PySide2 import QtWidgets, QtCore, QtGui
-
-from enums import FileType, ItemFlags
 
 
 class DataViewDelegate(QtWidgets.QStyledItemDelegate):
@@ -12,8 +7,10 @@ class DataViewDelegate(QtWidgets.QStyledItemDelegate):
 
 
 	def paint(self, painter, option, index):
+		# get pixmap of object icon in pixmap
 		pixmap = index.model().data(index, role = QtCore.Qt.DecorationRole).pixmap(QtCore.QSize(40, 40))
 		dataArr = index.data()
+		# get data array
 		name = dataArr[1]
 		createDate = dataArr[2]
 
@@ -24,13 +21,16 @@ class DataViewDelegate(QtWidgets.QStyledItemDelegate):
 		lineRect = QtCore.QRect(QtCore.QPoint(leftMargin, rect.bottom()),
 								QtCore.QSize(rect.width() - 2 * leftMargin, 1))
 
+		# draw border-bottom of view
 		painter.fillRect(lineRect, QtGui.QColor('#45464A'))
 
+		# view has selection of focus, change background color
 		if option.state & QtWidgets.QStyle.State_HasFocus:
 			painter.fillRect(rect, QtGui.QBrush(QtGui.QColor('#C9942F')))
 		elif option.state & QtWidgets.QStyle.State_Selected:
 			painter.fillRect(rect, QtGui.QBrush(QtGui.QColor('#353639')))
 
+		# draw icon of object view
 		iconSize = QtCore.QSize(16, 16)
 		iconRect = QtCore.QRect(
 				rect.topLeft() + QtCore.QPoint(leftMargin, (rect.height() - iconSize.height()) / 2.0),
@@ -47,6 +47,7 @@ class DataViewDelegate(QtWidgets.QStyledItemDelegate):
 		font = painter.font()
 		font.setPointSize(9)
 		painter.setFont(font)
+		# draw create date of object
 		if createDate is not None:
 			createDateInString = createDate.strftime("%Y-%m-%d %H:%M")
 			createDateWidth = fontMetric.width(createDateInString)
