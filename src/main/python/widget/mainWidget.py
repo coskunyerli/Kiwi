@@ -29,6 +29,7 @@ from widget.breadCrumbWidget import BreadCrumb
 from widget.dialog.filePickerDialog import FilePickerDialog
 from widget.dialog.textEditorDialog import TextEditorDialog
 from widget.listView import ListView
+from widget.toast import Toast
 
 
 class Ui_Form(object):
@@ -302,7 +303,7 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 			dialog.open()
 		else:
 			log.warning(f'Unsupported data. Data {data} is not viewed.')
-			QtWidgets.QMessageBox.warning(self, 'Unsupported Data', 'Data is not upsupported')
+			Toast.warning('Unsupported Data', 'Data is not upsupported')
 
 
 	def changeFocus(self):
@@ -316,6 +317,7 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 	def dropItemToBreadCrumb(self, fileItemList, mimeData):
 		parentIndex = self.fileTreeModel.getItemIndex(fileItemList)
 		if self.fileTreeModel.dropMimeData(mimeData, QtCore.Qt.MoveAction, -1, -1, parentIndex) is False:
+			Toast.warning('Drop Warning', 'Item is not dropped successfully to bread crumb')
 			log.warning(f'Item is not dropped successfully to the bread crumb. Parent is {fileItemList}. '
 						f'Item is {mimeData.colorData()}')
 
@@ -354,11 +356,14 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 			self.dataListModelService().save(newFile)
 			i = self.fileListProxyModel.insertData(newFile, 0)
 			index = self.fileListProxyModel.index(i)
+			self.fileListView.setCurrentIndex(QtCore.QModelIndex())
 			self.fileListView.setCurrentIndex(index)
 		# Save root file into disc
 		except InvalidListModelItemException as e:
+			Toast.error('New File Error', e)
 			log.error(e)
 		except Exception as e:
+			Toast.error('New File Error', 'File item is not created successfully')
 			log.error(f'Data is not inserted successfully. Display name is {displayName}. New File is {newFile}.'
 					  f' Exception is {e}')
 
@@ -376,11 +381,14 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 			log.info(f'New folder is created named {newFolder}')
 
 			index = self.fileListProxyModel.index(i)
+			self.fileListView.setCurrentIndex(QtCore.QModelIndex())
 			self.fileListView.setCurrentIndex(index)
 		# Save root file into disc
 		except InvalidListModelItemException as e:
+			Toast.error('New Folder Error', e)
 			log.error(e)
 		except Exception as e:
+			Toast.error('New File Error', 'Folder is not created successfully')
 			log.error(f'Data is not inserted successfully. Display name is {displayName}. New Folder is {newFolder}.'
 					  f' Exception is {e}')
 
@@ -391,6 +399,7 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 			textEditorDialog.fileSaved.connect(self.insertDataToDataModel)
 			textEditorDialog.open()
 		else:
+			Toast.warning('New Data Warning', 'There is no selected item')
 			log.warning('Current data model is empty. Therefore new text file does not created')
 
 
@@ -404,10 +413,13 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 				if fileData is not None:
 					self.insertDataToDataModel(fileData)
 				else:
+					Toast.warning('Unsupported Data', 'Data is not supported')
 					log.warning(f'Data {data} from file picker is not converted to FileData while creating new file')
-			else:
+			elif value == QtWidgets.QDialog.Accepted and dialog.data.isValid() is False:
+				Toast.warning('Unsupported Data', 'Data is not supported')
 				log.warning(f'Invalid file is selected from file picker while creating new file')
 		else:
+			Toast.warning('New Data Warning', 'There is no selected item')
 			log.warning('Current data model is empty. Therefore new file does not created')
 
 
@@ -448,17 +460,20 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 				self.changeFolder(parent)
 				self.fileListView.setCurrentIndex(self.fileListProxyModel.index(childNumber))
 			else:
+				Toast.warning('Invalid Parent Folder', 'Parent folder is invalid, so changing folder is invalid')
 				log.warning(f'Child number is none of folder {currentFolder} in changePrevFolder() method')
 
 
 	def changeNextFolder(self):
-		listModelFileItem = self.fileListView.currentIndex().data(QtCore.Qt.UserRole)
-		if listModelFileItem.type == FileType.FOLDER:
-			self.fileListView.setCurrentIndex(QtCore.QModelIndex())
-			self.changeFolder(listModelFileItem)
-		elif listModelFileItem.type == FileType.FILE and self.dataProxyModel.rowCount() > 0:
-			index = self.dataProxyModel.index(0, 0)
-			self.openData(index)
+		index = self.fileListView.currentIndex()
+		if index.isValid() is True:
+			listModelFileItem = self.fileListView.currentIndex().data(QtCore.Qt.UserRole)
+			if listModelFileItem.type == FileType.FOLDER:
+				self.fileListView.setCurrentIndex(QtCore.QModelIndex())
+				self.changeFolder(listModelFileItem)
+			elif listModelFileItem.type == FileType.FILE and self.dataProxyModel.rowCount() > 0:
+				index = self.dataProxyModel.index(0, 0)
+				self.openData(index)
 
 
 	def changeFolder(self, listModelFolderItem):
@@ -469,6 +484,7 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 		else:
 			log.warning(f'Data {listModelFolderItem} is file item. Therefore this data is not be current '
 						f'folder for proxy model')
+			Toast.warning('File item is invalid', 'File item should be folder to change folder')
 
 
 	def clickedBreadCrumb(self, folder):
@@ -483,6 +499,7 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 			# update bread crumb path
 			self.breadCrumb.setPath(listModelFileItem)
 		else:
+			Toast.warning('File item is invalid', 'File item should be folder to change folder')
 			log.warning(f'Data {listModelFileItem} is not set to the bread crumb. Since it is file item')
 
 
@@ -523,9 +540,11 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 			if self.dataListModelService().deleteListModelFileItem(listModelFileItem) is False:
 				log.warning(f'Error occurred while delete file from storage at data list model service. '
 							f'Parent file is {listModelFileItem.path()}.')
+				Toast.warning('Save File Item Warning', 'File item is not saved successfully to the storage')
 
 			if self.fileListProxyModel.isEmpty() is False:
 				index = self.fileListProxyModel.index(0)
+				self.fileListView.setCurrentIndex(QtCore.QModelIndex())
 				self.fileListView.setCurrentIndex(index)
 
 

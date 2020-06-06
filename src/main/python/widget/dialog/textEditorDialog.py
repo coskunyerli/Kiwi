@@ -8,6 +8,7 @@ from model.data import FileData
 from model.styleItem import StyleItem
 from service.configurationService import ConfigurationService
 from widget.textEditWidget import TextEditorWidget
+from widget.toast import Toast
 
 
 class TextEditorDialog(QtWidgets.QDialog, ConfigurationService):
@@ -70,9 +71,8 @@ class TextEditorDialog(QtWidgets.QDialog, ConfigurationService):
 				filename, result = QtWidgets.QInputDialog.getText(self, 'Save File', 'Enter a filename to save',
 																  text = 'Text')
 				filenameArray = filename.split(' ')
-				filename = '_'.join(filenameArray)
 				now = datetime.datetime.now().timestamp()
-				path = os.path.join(core.fbs.filesPath, f'{filename}_{int(now)}.json')
+				path = os.path.join(core.fbs.filesPath, f'{"_".join(filenameArray)}_{int(now)}.json')
 			else:
 				filename = self.currentTextData.filename
 				path = self.currentTextData.path
@@ -103,6 +103,7 @@ class TextEditorDialog(QtWidgets.QDialog, ConfigurationService):
 			with open(path, 'w') as file:
 				file.write(self.textEditorWidget.editor.toHtml())
 		except Exception as e:
+			Toast.error('Text Save Error', 'Text is not saved successfully.')
 			log.error(f'Text file is not saved successfully. Path is {path}. Exception is {e}')
 			return False
 
@@ -130,12 +131,14 @@ class TextEditorDialog(QtWidgets.QDialog, ConfigurationService):
 
 				super(TextEditorDialog, self).open()
 			except FileNotFoundError as e:
+				Toast.error('Text Dialog Error', 'Text Editor is not opened successfully. File is not found')
 				log.error(f'File does not exists in text editor dialog. Path is {self.currentTextData.path}.')
 			except Exception as e:
+				Toast.error('Text Dialog Error', 'Text Editor is not opened successfully.')
 				log.error(f'Error occurred while open data in text editor dialog. Path is {self.currentTextData.path}. '
 						  f'Exception is {e}')
 		else:
-			log.error('Current data is None in text editor dialog. Dialog can not be open')
+			super(TextEditorDialog, self).open()
 
 
 	def reject(self):

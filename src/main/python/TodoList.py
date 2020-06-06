@@ -6,6 +6,7 @@ import sys
 import logging as log
 from model.fbs import TodoListApplicationContext
 import PySide2.QtWidgets as QtWidgets
+from widget.toast import Toast
 
 if __name__ == "__main__":
 	# setup app
@@ -35,7 +36,6 @@ if __name__ == "__main__":
 		saveListService.saveListModelService().setPath(fbs.fileListPath)
 		dataListService.dataListModelService().setPath(fbs.filePath)
 
-
 		confService.configuration().setPath(fbs.conf)
 		confService.configuration().read()
 		log.info('Configuration is loaded successfully...')
@@ -46,7 +46,11 @@ if __name__ == "__main__":
 
 		# setup ui
 		mainWindow = MainWindow()
+		Toast.setWidget(mainWindow)
 		log.info('Widget is created successfully...')
+
+
+		Toast.settings['iconsPath'] = fbs.get_resource(os.path.join('icons', 'toast'))
 
 		mainQss = fbs.qss('style.qss')
 		if mainQss is not None:

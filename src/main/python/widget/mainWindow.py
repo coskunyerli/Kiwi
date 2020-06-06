@@ -1,10 +1,11 @@
 import os
 
-import static
+import static, logging as log
 from PySide2 import QtCore, QtGui, QtWidgets
 
 from service.saveListModelService import SaveListModelFolderItemService
 from widget.mainWidget import MainWidget
+from widget.toast import Toast
 
 
 class MainWindow(QtWidgets.QMainWindow, SaveListModelFolderItemService):
@@ -106,42 +107,51 @@ class MainWindow(QtWidgets.QMainWindow, SaveListModelFolderItemService):
 		# read settings from setting file,
 		# read lastly seen folder id
 		error = lambda key: f'Read settings from setting file. Key is {key}'
-
-		folderID = static.getValueFromDict(self.setting.value('currentFolderID'), [int], error('currentFolderID'))
-		# read lastly seen item id
-		itemID = static.getValueFromDict(self.setting.value('currentItemID'), [int], error('currentItemID'))
-		# if they are not none load it
-		if folderID is not None:
-			# find last seen folder
-			currentFolderArray = self.mainWidget.fileTreeModel.find(lambda item: item.id() == folderID)
-			if currentFolderArray:
-				currentFolder = currentFolderArray[0]
-				# update current folder
-				self.mainWidget.fileListProxyModel.setCurrentFolder(currentFolder)
-				self.mainWidget.breadCrumb.setPath(currentFolder)
-				if itemID is not None:
-					# find last item folder in current folder
-					currentItemArray = currentFolder.find(lambda item: item.id() == itemID)
-					if currentItemArray:
-						currentItem = currentItemArray[0]
-						itemChildNumber = currentItem.childNumber()
-						if itemChildNumber is not None:
-							currentItemIndex = self.mainWidget.fileListProxyModel.index(itemChildNumber)
-							self.mainWidget.fileListView.setCurrentIndex(currentItemIndex)
-		# read recursive search flag
-		recursiveSearch = static.getValueFromDict(self.setting.value('enableRecursiveSearch'), [bool],
-												  error('enableRecursiveSearch'))
-		if recursiveSearch is not None:
-			self.mainWidget.flattenSearchCheckbox.setChecked(recursiveSearch)
+		try:
+			folderID = static.getValueFromDict(self.setting.value('currentFolderID'), [int], error('currentFolderID'))
+			# read lastly seen item id
+			itemID = static.getValueFromDict(self.setting.value('currentItemID'), [int], error('currentItemID'))
+			# if they are not none load it
+			if folderID is not None:
+				# find last seen folder
+				currentFolderArray = self.mainWidget.fileTreeModel.find(lambda item: item.id() == folderID)
+				if currentFolderArray:
+					currentFolder = currentFolderArray[0]
+					# update current folder
+					self.mainWidget.fileListProxyModel.setCurrentFolder(currentFolder)
+					self.mainWidget.breadCrumb.setPath(currentFolder)
+					if itemID is not None:
+						# find last item folder in current folder
+						currentItemArray = currentFolder.find(lambda item: item.id() == itemID)
+						if currentItemArray:
+							currentItem = currentItemArray[0]
+							itemChildNumber = currentItem.childNumber()
+							if itemChildNumber is not None:
+								currentItemIndex = self.mainWidget.fileListProxyModel.index(itemChildNumber)
+								self.mainWidget.fileListView.setCurrentIndex(currentItemIndex)
+			# read recursive search flag
+			recursiveSearch = static.getValueFromDict(self.setting.value('enableRecursiveSearch'), [bool],
+													  error('enableRecursiveSearch'))
+			if recursiveSearch is not None:
+				self.mainWidget.flattenSearchCheckbox.setChecked(recursiveSearch)
+		except ValueError as e:
+			log.error(f'Setting is not loaded succesfully. Exception is {e}')
+			Toast.error('Setting Error', 'Setting is not read successfully. Since file is invalid')
+		except Exception as e:
+			log.error(f'Unexpected value is occurred while reading settings file. Exception is {e}')
+			Toast.error('Setting Error', 'Unexpected error is occurred while reading setting file')
 
 
 	def saveSetting(self):
 		# save last current folder, item and recursive search flag
-		folder = self.mainWidget.fileListProxyModel.sourceFolder()
-		self.setting.setValue('currentFolderID', folder.id())
-		currentItemIndex = self.mainWidget.fileListView.currentIndex()
-		if currentItemIndex.isValid():
-			itemID = currentItemIndex.data()[0]
-			self.setting.setValue('currentItemID', itemID)
+		try:
+			folder = self.mainWidget.fileListProxyModel.sourceFolder()
+			self.setting.setValue('currentFolderID', folder.id())
+			currentItemIndex = self.mainWidget.fileListView.currentIndex()
+			if currentItemIndex.isValid():
+				itemID = currentItemIndex.data()[0]
+				self.setting.setValue('currentItemID', itemID)
 
-		self.setting.setValue('enableRecursiveSearch', self.mainWidget.flattenSearchCheckbox.isChecked())
+			self.setting.setValue('enableRecursiveSearch', self.mainWidget.flattenSearchCheckbox.isChecked())
+		except Exception as e:
+			log.error(f'Setting file is not ssaved succesfully. Exception is {e}')
