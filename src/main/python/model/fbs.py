@@ -11,6 +11,9 @@ class TodoListApplicationContext(ApplicationContext):
 			os.makedirs(self.filePath)
 		if not os.path.isdir(self.filesPath):
 			os.makedirs(self.filesPath)
+		if not os.path.exists(self.fileListPath):
+			with open(self.fileListPath, 'w') as file:
+				file.write('{}')
 
 
 	def qss(self, filename):
