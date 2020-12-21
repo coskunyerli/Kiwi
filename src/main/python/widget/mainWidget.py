@@ -19,7 +19,7 @@ from factory.dataFactory import DataFactory
 from itemmodel.dataModel import DataModel
 from itemmodel.listTreeModel import ListTreeModel
 from enums import FileType, ItemFlags
-from itemmodel.listModelItem import ListModelFileItem, ListModelFolderItem
+from model.listModelItem import ListModelFileItem, ListModelFolderItem
 from preferences.storyPreferencesDialogue import Preferences
 from proxy.dataModelProxy import DataModelProxy
 from proxy.fileListModelProxy import FileListModelProxy

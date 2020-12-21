@@ -4,7 +4,7 @@ from PySide2 import QtCore, QtGui
 
 from enums import FileType, ItemFlags
 from exceptions.invalidListModelItemException import InvalidListModelItemException
-from itemmodel.listModelItem import ListModelFileItem, ListModelFolderItem
+from model.listModelItem import ListModelFileItem, ListModelFolderItem
 
 
 class ListTreeModel(QtCore.QAbstractItemModel):

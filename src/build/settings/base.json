@@ -1,5 +1,5 @@
 {
-    "app_name": "Barcode",
+    "app_name": "Kiwi",
     "author": "Coskun Yerli",
     "main_module": "src/main/python/Kiwi.py",
     "version": "0.0.0"

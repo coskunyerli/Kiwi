@@ -3,7 +3,7 @@ import json
 import logging as log
 
 from enums import FileType
-from itemmodel.listModelItem import ListModelFolderItem, ListModelFileItem
+from model.listModelItem import ListModelFolderItem, ListModelFileItem
 
 
 class __SaveListModelFolderItemService__(object):

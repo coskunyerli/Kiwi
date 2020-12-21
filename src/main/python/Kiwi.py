@@ -4,7 +4,7 @@ import datetime
 import os
 import sys
 import logging as log
-from model.fbs import TodoListApplicationContext
+from app.fbs import TodoListApplicationContext
 import PySide2.QtWidgets as QtWidgets
 from widget.toast import Toast
 

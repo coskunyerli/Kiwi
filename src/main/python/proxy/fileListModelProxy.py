@@ -1,6 +1,6 @@
 import PySide2.QtCore as QtCore
 from enums import FileType, ItemFlags
-from itemmodel.listModelItem import MaskFolderItem
+from model.listModelItem import MaskFolderItem
 
 
 class FileListModelProxy(QtCore.QAbstractProxyModel):

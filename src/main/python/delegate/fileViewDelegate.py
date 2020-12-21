@@ -123,9 +123,9 @@ class FileViewDelegate(QtWidgets.QStyledItemDelegate):
 
 	# if isLocked is not None:
 	# if isLocked:
-	# 	lockPixmap = QtGui.QPixmap(core.fbs.icons('lock.png'))
+	# 	lockPixmap = QtGui.QPixmap(core.app.icons('lock.png'))
 	# else:
-	# 	lockPixmap = QtGui.QPixmap(core.fbs.icons('lock-open.png'))
+	# 	lockPixmap = QtGui.QPixmap(core.app.icons('lock-open.png'))
 	# lockPixmapSize = lockPixmap.size() / 4.5
 	# lockRect = QtCore.QRect(
 	# 		rect.topLeft() + QtCore.QPoint(4, 4),
