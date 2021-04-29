@@ -81,7 +81,7 @@ class ListModelFileItem(object):
 
 
 	def appendData(self, item):
-		self.__dataList.append(item)
+		self.__dataList.insert(0, item)
 
 
 	def popData(self, row):
