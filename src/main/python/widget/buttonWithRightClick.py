@@ -1,7 +1,7 @@
 from PySide2 import QtWidgets, QtCore
 
 
-class ButtonWithRightClick(QtWidgets.QToolButton):
+class ButtonWithRightClick(QtWidgets.QPushButton):
 	rightClicked = QtCore.Signal()
 
 
