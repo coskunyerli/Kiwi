@@ -6,7 +6,12 @@
     padding-top: 4px;
     padding-bottom: 4px;
 }
-
+#modeCombobox, #fontSizeCombo{
+    color:#dddddd;
+}
+#patternLineEdit,#nameLineEdit{
+    padding-left:4px;
+}
 #preferencesInfoLabel {
     padding-left: 8px;
     padding-top: 8px;

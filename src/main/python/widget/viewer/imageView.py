@@ -1,10 +1,11 @@
 import PySide2.QtWidgets as QtWidgets, PySide2.QtCore as QtCore
 from widget.imageView import ImageViewer
+from widget.viewer.baseViewerInterface import BaseViewerInterface
 
 
-class ImageViewDialog(QtWidgets.QDialog):
+class ImageView(QtWidgets.QWidget, BaseViewerInterface):
 	def __init__(self, parent = None):
-		super(ImageViewDialog, self).__init__(parent)
+		super(ImageView, self).__init__(parent)
 		self.resize(600, 600)
 		self.setStyleSheet('background-color:#303030')
 		self.mainWidgetLayout = QtWidgets.QHBoxLayout(self)
@@ -15,13 +16,21 @@ class ImageViewDialog(QtWidgets.QDialog):
 		self.mainWidgetLayout.addWidget(self.graphicsView)
 
 
+	def isExternalWidget(self):
+		return False
+
+
+	def currentData(self):
+		return self.imageFileData
+
+
 	def setCurrentData(self, data):
 		self.imageFileData = data
+		self.__setCurrentData()
 
 
-	def open(self):
-		super(ImageViewDialog, self).open()
-		# fit in view after dialog open
+	def __setCurrentData(self):
+		# fit in view after viewer open
 		self.graphicsView.setPixmap(self.imageFileData.pixmap())
 		self.graphicsView.fitInView(self.graphicsView.pixmapItem, QtCore.Qt.KeepAspectRatio)
 
@@ -31,4 +40,11 @@ class ImageViewDialog(QtWidgets.QDialog):
 			# press F key fit in view
 			self.graphicsView.fitInView(self.graphicsView.pixmapItem, QtCore.Qt.KeepAspectRatio)
 		else:
-			super(ImageViewDialog, self).keyPressEvent(event)
+			super(ImageView, self).keyPressEvent(event)
+
+
+	def id(self):
+		if self.currentData() is not None:
+			return self.currentData().id()
+		else:
+			return None

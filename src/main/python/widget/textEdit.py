@@ -3,11 +3,11 @@ from PySide2 import QtWidgets, QtGui
 
 class TextEdit(QtWidgets.QTextEdit):
 
-	def focusInEvent(self, event):
-		super(TextEdit, self).focusInEvent(event)
-		cursor = self.textCursor()
-		cursor.movePosition(QtGui.QTextCursor.End)
-		self.setTextCursor(cursor)
+	# def focusInEvent(self, event):
+	# 	super(TextEdit, self).focusInEvent(event)
+	# 	cursor = self.textCursor()
+	# 	cursor.movePosition(QtGui.QTextCursor.End)
+	# 	self.setTextCursor(cursor)
 
 
 	def dragEnterEvent(self, event):

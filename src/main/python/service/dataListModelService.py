@@ -46,6 +46,7 @@ class __DataListModelFolderItemService__(object):
 								for dictData in dataListInDict:
 									data = DataFactory.fileDataFromJson(dictData)
 									if data is not None:
+										data.setParent(listModelFileItem)
 										listModelFileItem.appendData(data)
 									else:
 										log.warning(f'Data {dictData} is not valid to create ListModelFileItem. '

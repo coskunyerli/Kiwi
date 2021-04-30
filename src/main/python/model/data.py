@@ -7,9 +7,18 @@ from enums import DataType
 
 class Data(object):
 	def __init__(self, name, createDate = None):
-		self.name = name
+		self.__name = name
 		self.createDate = createDate if createDate is not None else datetime.datetime.now()
 		self.__type = DataType.DATA
+		self.__parent = None
+
+
+	def parent(self):
+		return self.__parent
+
+
+	def setParent(self, parent):
+		self.__parent = parent
 
 
 	def type(self):
@@ -21,19 +30,23 @@ class Data(object):
 
 
 	def setName(self, name):
-		self.name = name
+		self.__name = name
+
+
+	def name(self):
+		return self.__name
 
 
 	def toArray(self):
-		return [self.type(), self.name, self.createDate]
+		return [self.type(), self.name(), self.createDate]
 
 
 	def dict(self):
-		return {'type': self.type(), 'name': self.name, 'createDate': self.createDate.timestamp()}
+		return {'type': self.type(), 'name': self.name(), 'createDate': self.createDate.timestamp()}
 
 
 	def id(self):
-		return self.name
+		return self.name()
 
 
 	def __eq__(self, other):
@@ -47,7 +60,7 @@ class Data(object):
 
 
 	def __str__(self):
-		return f'Data({self.name})'
+		return f'Data({self.name()})'
 
 
 class FileData(Data):
@@ -78,7 +91,7 @@ class FileData(Data):
 
 
 	def __str__(self):
-		return f'FileData({self.name}, {self.path}, {self.__type})'
+		return f'FileData({self.name()}, {self.path}, {self.__type})'
 
 
 class ImageFileData(FileData):
@@ -94,4 +107,4 @@ class ImageFileData(FileData):
 
 
 	def __str__(self):
-		return f'ImageFileData({self.name}, {self.path})'
+		return f'ImageFileData({self.name()}, {self.path})'

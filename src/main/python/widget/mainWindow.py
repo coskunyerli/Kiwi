@@ -2,18 +2,19 @@ import os
 
 import static, logging as log
 from PySide2 import QtCore, QtGui, QtWidgets
+from service.preferencesService import PreferencesService
 
 from service.saveListModelService import SaveListModelFolderItemService
 from widget.mainWidget import MainWidget
 from widget.toast import Toast
 
 
-class MainWindow(QtWidgets.QMainWindow, SaveListModelFolderItemService):
+class MainWindow(QtWidgets.QMainWindow, SaveListModelFolderItemService, PreferencesService):
 	def __init__(self, parent = None):
 		super(MainWindow, self).__init__(parent)
 		self.visible = False
 
-		self.resize(800, 600)
+		self.setMinimumHeight(600)
 
 		root = self.readFileList()
 		self.mainWidget = MainWidget(root, self)
@@ -21,7 +22,7 @@ class MainWindow(QtWidgets.QMainWindow, SaveListModelFolderItemService):
 		self.setupFileMenu()
 		self.setupHelpMenu()
 		self.setCentralWidget(self.mainWidget)
-		self.setWindowTitle('TodoList')
+		self.setWindowTitle('Kiwi')
 		self.initSignalsAndSlots()
 		self.initShortcuts()
 		self.initialize()
@@ -107,10 +108,13 @@ class MainWindow(QtWidgets.QMainWindow, SaveListModelFolderItemService):
 		# read settings from setting file,
 		# read lastly seen folder id
 		error = lambda key: f'Read settings from setting file. Key is {key}'
+		self.preferences().read(self.setting)
 		try:
-			folderID = static.getValueFromDict(self.setting.value('currentFolderID'), [int], error('currentFolderID'))
+			folderID = static.getValueFromDict(self.setting.value('currentFolderID'), [int, None.__class__],
+											   error('currentFolderID'))
 			# read lastly seen item id
-			itemID = static.getValueFromDict(self.setting.value('currentItemID'), [int], error('currentItemID'))
+			itemID = static.getValueFromDict(self.setting.value('currentItemID'), [int, None.__class__],
+											 error('currentItemID'))
 			# if they are not none load it
 			if folderID is not None:
 				# find last seen folder
@@ -127,10 +131,13 @@ class MainWindow(QtWidgets.QMainWindow, SaveListModelFolderItemService):
 							currentItem = currentItemArray[0]
 							itemChildNumber = currentItem.childNumber()
 							if itemChildNumber is not None:
+								self.mainWidget.fileListView.setCurrentIndex(QtCore.QModelIndex())
 								currentItemIndex = self.mainWidget.fileListProxyModel.index(itemChildNumber)
 								self.mainWidget.fileListView.setCurrentIndex(currentItemIndex)
+
 			# read recursive search flag
-			recursiveSearch = static.getValueFromDict(self.setting.value('enableRecursiveSearch'), [bool],
+			recursiveSearch = static.getValueFromDict(self.setting.value('enableRecursiveSearch'),
+													  [bool, None.__class__],
 													  error('enableRecursiveSearch'))
 			if recursiveSearch is not None:
 				self.mainWidget.flattenSearchCheckbox.setChecked(recursiveSearch)
@@ -145,6 +152,7 @@ class MainWindow(QtWidgets.QMainWindow, SaveListModelFolderItemService):
 	def saveSetting(self):
 		# save last current folder, item and recursive search flag
 		try:
+			self.preferences().write(self.setting)
 			folder = self.mainWidget.fileListProxyModel.sourceFolder()
 			self.setting.setValue('currentFolderID', folder.id())
 			currentItemIndex = self.mainWidget.fileListView.currentIndex()

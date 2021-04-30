@@ -11,9 +11,10 @@ import os
 
 import core
 import PySide2.QtCore as QtCore, PySide2.QtWidgets as QtWidgets
+from preferences.textEditorPreferencesWidget import TextEditorPreferencesWidget
 
 """
-this is preferences dialog. when clicked the prefences button, this dialog will open in story app
+this is preferences viewer. when clicked the prefences button, this viewer will open in story app
 """
 
 
@@ -29,22 +30,17 @@ class Ui_Dialog(object):
 		self.mainWidget = QtWidgets.QFrame(Dialog)
 		self.mainWidget.setObjectName('mainWidget')
 
-		self.horizontalWidgetLayout = QtWidgets.QHBoxLayout(self.mainWidget)
-		self.horizontalWidgetLayout.setContentsMargins(0, 0, 0, 0)
-		self.horizontalWidgetLayout.setSpacing(0)
+		self.mainlWidgetLayout = QtWidgets.QHBoxLayout(self.mainWidget)
+		self.mainlWidgetLayout.setContentsMargins(0, 0, 0, 0)
+		self.mainlWidgetLayout.setSpacing(0)
 
-		self.preferencesInfoWidget = QtWidgets.QWidget(self.mainWidget)
-		self.preferencesInfoWidgetLayout = QtWidgets.QVBoxLayout(self.preferencesInfoWidget)
+		self.preferencesInfoWidget = QtWidgets.QFrame(self.mainWidget)
+		self.preferencesInfoWidgetLayout = QtWidgets.QHBoxLayout(self.preferencesInfoWidget)
 		self.preferencesInfoWidgetLayout.setContentsMargins(0, 0, 0, 0)
-		self.preferencesInfoWidgetLayout.setSpacing(1)
+		self.preferencesInfoWidgetLayout.setSpacing(0)
 
-		self.preferencesInfoLabel = QtWidgets.QLabel(self.preferencesInfoWidget)
-		# self.preferencesInfoLabel.setAlignment(QtCore.Qt.AlignCenter)
-		self.preferencesInfoLabel.setObjectName('preferencesInfoLabel')
-		# self.preferencesInfoLabel.setMargin(8)
 		self.preferencesWidget = QtWidgets.QFrame(self.preferencesInfoWidget)
 
-		self.preferencesInfoWidgetLayout.addWidget(self.preferencesInfoLabel)
 		self.preferencesInfoWidgetLayout.addWidget(self.preferencesWidget)
 
 		self.preferencesWidgetLayout = QtWidgets.QHBoxLayout(self.preferencesWidget)
@@ -55,8 +51,8 @@ class Ui_Dialog(object):
 		self.categoryListWidget.setFixedWidth(200)
 		self.categoryListWidget.setObjectName('categoryListWidget')
 
-		self.horizontalWidgetLayout.addWidget(self.categoryListWidget)
-		self.horizontalWidgetLayout.addWidget(self.preferencesInfoWidget)
+		self.mainlWidgetLayout.addWidget(self.categoryListWidget)
+		self.mainlWidgetLayout.addWidget(self.preferencesInfoWidget)
 
 		self.buttonBox = QtWidgets.QWidget(Dialog)
 		self.buttonBox.setObjectName('buttonBox')
@@ -65,17 +61,19 @@ class Ui_Dialog(object):
 		self.cancelButton.setText('Cancel')
 
 		self.applyButton = QtWidgets.QPushButton(self.buttonBox)
+		self.applyButton.setDefault(True)
 		self.applyButton.setText('Apply')
 
 		self.okButton = QtWidgets.QPushButton(self.buttonBox)
-		self.okButton.setText('Ok')
+		self.okButton.setText('OK')
 
 		self.buttonBoxLayout.setContentsMargins(4, 2, 4, 2)
 		self.buttonBoxLayout.setSpacing(2)
-		self.buttonBoxLayout.addWidget(self.applyButton)
 		self.buttonBoxLayout.addItem(
-				QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum))
+			QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum))
+
 		self.buttonBoxLayout.addWidget(self.cancelButton)
+		self.buttonBoxLayout.addWidget(self.applyButton)
 		self.buttonBoxLayout.addWidget(self.okButton)
 
 		self.verticalMainLayout.addWidget(self.mainWidget)
@@ -88,7 +86,7 @@ class Ui_Dialog(object):
 
 	def retranslateUi(self, Dialog):
 		Dialog.setWindowTitle(
-				QtWidgets.QApplication.translate("Dialog", "Preferences", None))
+			QtWidgets.QApplication.translate("Dialog", "Preferences", None))
 
 
 categoryIndex = 0
@@ -117,17 +115,19 @@ class Preferences(Ui_Dialog, QtWidgets.QDialog):
 
 
 	def initialize(self):
-		self.__addItemToTheCategory(['Text Editor', 'Image Viewer', 'Save', 'Font', 'Export'])
+		self.__addItemToTheCategory([TextEditorPreferencesWidget(self)])  # 'Image Viewer', 'Save', 'Font', 'Export'
 		self.categoryListWidget.setCurrentIndex(self.categoryListWidget.model().index(categoryIndex, 0))
 
 
 	def __addItemToTheCategory(self, categories):
 		# generate category items
-		for category in categories:
+		for categoryWidget in categories:
 			listItem = QtWidgets.QListWidgetItem()
-			listItem.setText(category)
+			listItem.setText(categoryWidget.name())
 			listItem.setSizeHint(QtCore.QSize(30, 27))
 			self.categoryListWidget.addItem(listItem)
+			self.widgetList[categoryWidget.name()] = categoryWidget
+			self.preferencesInfoWidgetLayout.addWidget(categoryWidget)
 
 
 	def initSignalsAndSlots(self):
@@ -149,4 +149,7 @@ class Preferences(Ui_Dialog, QtWidgets.QDialog):
 
 
 	def __apply(self):
-		return
+		for widgetText in self.widgetList:
+			widget = self.widgetList[widgetText]
+			if widget.changed() is True:
+				pass

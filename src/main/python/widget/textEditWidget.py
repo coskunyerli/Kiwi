@@ -85,11 +85,13 @@ class TextEditorWidget(QtWidgets.QWidget):
 		self.highlightCursor = QtGui.QTextCursor(self.editor.document())
 		self.highlightCursor.setPosition(0)
 
-		searchStyle = StyleItem('search', '', 'Menlo', 12, None, None, None, None, 'yellow', None)
+		searchStyle = StyleItem('search', 0, '', None, None, 'Menlo', 12, None, None, None, None, None, 'yellow', None,
+								None)
 		self.rule = HighlightingRule(self.editor)
 		self.rule.style = searchStyle
 		self.highlighter.highlightingRules.append(self.rule)
-		self.rule.pattern = re.compile('', re.IGNORECASE)
+		self.rule.pattern = QtCore.QRegExp(fr'{searchStyle.pattern}')
+		self.rule.index = searchStyle.index
 
 		self.nextWordSearchWordShortcut = QtWidgets.QShortcut(self.searchWidgetInEditor)
 		self.nextWordSearchWordShortcut.setContext(QtCore.Qt.WidgetWithChildrenShortcut)
@@ -131,7 +133,7 @@ class TextEditorWidget(QtWidgets.QWidget):
 		self.nextWordSearchWordShortcut.activated.connect(self.nextWordButton.click)
 		self.showSearchWidgetShortcut.activated.connect(self.showSearch)
 		self.replaceCheckBox.stateChanged.connect(
-				lambda value: self.replaceWidget.show() if value else self.replaceWidget.hide())
+			lambda value: self.replaceWidget.show() if value else self.replaceWidget.hide())
 		self.replaceAllButton.clicked.connect(self.replaceAllText)
 		self.replaceButton.clicked.connect(self.replaceText)
 		self.searchLineBoxInEditor.textChanged.connect(self.searchWord)

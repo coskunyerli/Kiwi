@@ -2,90 +2,147 @@
   "patterns": [
     {
       "bold": false,
+      "underline": false,
       "strikeout": false,
       "name": "todo",
       "family": "Menlo",
       "italic": false,
       "color": "#07fff8",
-      "pattern": "\\[\\].*",
+      "pattern": "^\\s*\\[\\].*",
       "next": "TodoEnumeration",
       "background": null,
-      "size": 12.0
+      "size": 12.0,
+      "index": 0
     },
     {
       "bold": false,
+      "underline": false,
       "strikeout": true,
       "name": "done",
       "family": "Menlo",
       "italic": false,
       "color": "#00ff43",
-      "pattern": "\\[\\+\\].*",
+      "pattern": "^\\s*\\[\\+\\].*",
       "next": null,
       "background": null,
-      "size": 12.0
+      "size": 12.0,
+      "index": 0
     },
     {
       "bold": false,
+      "underline": false,
       "strikeout": false,
       "name": "undone",
       "family": "Menlo",
       "italic": false,
       "color": "#ff0200",
-      "pattern": "\\[-\\].*",
+      "pattern": "^\\s*\\[-\\].*",
       "next": null,
       "background": null,
-      "size": 12.0
+      "size": 12.0,
+      "index": 0
     },
     {
       "bold": false,
+      "underline": false,
       "strikeout": false,
       "name": "info",
       "family": "Menlo",
       "italic": false,
       "color": "#ffd100",
-      "pattern": "\\- .*",
+      "pattern": "^\\s*\\- .*",
       "next": "ListEnumeration",
       "background": null,
-      "size": 12.0
+      "size": 12.0,
+      "index": 0
     },
     {
       "bold": false,
+      "strikeout": false,
+      "underline": true,
+      "name": "url",
+      "family": "Menlo",
+      "italic": false,
+      "color": "#499acc",
+      "pattern": "(?:http(s)?:\\/\\/)?[\\w.-]+(?:\\.[\\w\\.-]+)+[\\w\\-\\._~:/?#[\\]@!\\$&'\\(\\)\\*\\+,;=.]+",
+      "next": null,
+      "background": null,
+      "size": 12.0,
+      "index": 0
+    },
+    {
+      "bold": false,
+      "underline": false,
+      "strikeout": false,
+      "name": "quotes",
+      "family": "Menlo",
+      "italic": false,
+      "color": "#cc7732",
+      "pattern": "\".*\"",
+      "next": null,
+      "background": null,
+      "size": 12.0,
+      "index": 0
+    },
+    {
+      "bold": false,
+      "underline": false,
+      "strikeout": false,
+      "name": "person",
+      "family": "Menlo",
+      "italic": false,
+      "color": "#4694c4",
+      "pattern": "\\B@\\w+",
+      "next": null,
+      "background": "#253139",
+      "size": 12.0,
+      "index": 0
+    },
+    {
+      "bold": false,
+      "underline": false,
       "strikeout": false,
       "name": "title",
       "family": "Menlo",
       "italic": false,
       "color": "#fc00ff",
-      "pattern": "##.*",
+      "pattern": "^\\s*##.*",
       "next": null,
       "background": null,
-      "size": 12.0
+      "size": 12.0,
+      "index": 0
     },
     {
       "bold": false,
+      "underline": false,
       "strikeout": false,
       "name": "warning",
       "family": "Menlo",
       "italic": false,
       "color": "#ffcc00",
-      "pattern": "\\[!\\].*",
+      "pattern": "^\\[!\\].*",
       "next": null,
       "background": null,
-      "size": 12.0
+      "size": 12.0,
+      "index": 0
     },
     {
       "bold": true,
+      "underline": false,
       "strikeout": false,
       "name": "Error",
       "family": "Menlo",
       "italic": false,
       "color": "#f70003",
-      "pattern": "bug:.*",
+      "pattern": "^bug:.*",
       "next": null,
       "background": null,
-      "size": 12.0
+      "size": 12.0,
+      "index": 0
     },
     {
       "bold": true,
+      "underline": false,
       "strikeout": false,
       "name": "important",
       "family": "Menlo",
@@ -94,7 +151,18 @@
       "pattern": "!imp",
       "next": null,
       "background": null,
-      "size": 12.0
+      "size": 12.0,
+      "index": 0
     }
+  ],
+  "backgroundColor": [
+    "#694f4f",
+    "#69684f",
+    "#4f6953",
+    "#202020",
+    "#4f6968",
+    "#4f5069",
+    "#694f66",
+    "#444444"
   ]
 }

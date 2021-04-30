@@ -20,12 +20,56 @@ class TodoListApplicationContext(ApplicationContext):
 		try:
 			file = open(self.get_resource(os.path.join('qss', filename)))
 			string = file.read()
-			return string
+			return self.qssFromString(string)
 		except Exception as e:
 			return None
 
 
-	def icons(self, iconName):
+	def qssFromString(self, qss):
+		# Replacement of some %....% strings is done before
+
+		qss = qss.replace('%PATH%', self.icons())
+
+		# Reading possible functions is done afterwards
+		shouldRead = False
+		functionString = ''
+		commentLine = False
+
+		# Get all functions inside qss e.g &join(%PATH%, add.svg);&
+		for i in range(len(qss)):
+			if qss.startswith('/*', i):
+				commentLine = True
+
+			elif qss.startswith('*/', i) and commentLine:
+				commentLine = False
+
+			if not commentLine:
+				if qss.startswith('&', i):
+					if shouldRead:
+						splitString = functionString.split('(')
+						funcToUse = splitString[0]
+						parameterString = splitString[1]
+						parameters = parameterString.split(',')
+						parameters[-1] = parameters[-1].split(')')[0]
+
+						if funcToUse == 'join':
+							stringToReplace = join([param.replace(' ', '') for param in parameters])
+							qss = qss.replace('&' + functionString + '&', stringToReplace.replace('\\', '/'))
+
+						# .. Here other functions can be filled ..
+
+						# ----------------------------------------
+						functionString = ''
+
+					shouldRead = not shouldRead
+
+				elif shouldRead:
+					functionString = functionString + qss[i]
+
+		return qss
+
+
+	def icons(self, iconName = ''):
 		return self.get_resource(os.path.join('icons', iconName))
 
 
@@ -47,3 +91,12 @@ class TodoListApplicationContext(ApplicationContext):
 	@property
 	def fileListPath(self):
 		return os.path.join(self.filePath, 'fileList.json')
+
+
+# This function is called from Ive.qss with the same name with the usage of: &join(param1, param2, ...)&
+def join(pathList):
+	joinedPath = ''
+	for path in pathList:
+		joinedPath = os.path.join(joinedPath, path)
+
+	return joinedPath

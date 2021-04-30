@@ -14,7 +14,7 @@ from PySide2 import QtCore, QtGui, QtWidgets
 from delegate.dataViewDelegate import DataViewDelegate
 from delegate.fileViewDelegate import FileViewDelegate
 from exceptions.invalidListModelItemException import InvalidListModelItemException
-from factory.dataViewDialogFactory import DataViewDialogFactory
+from factory.dataViewFactory import DataViewFactory
 from factory.dataFactory import DataFactory
 from itemmodel.dataModel import DataModel
 from itemmodel.listTreeModel import ListTreeModel
@@ -27,7 +27,8 @@ from service.dataListModelService import DataListModelFolderItemService
 from service.saveListModelService import SaveListModelFolderItemService
 from widget.breadCrumbWidget import BreadCrumb
 from widget.dialog.filePickerDialog import FilePickerDialog
-from widget.dialog.textEditorDialog import TextEditorDialog
+from widget.tabWidget import TabWidget
+from widget.viewer.textEditor import TextEditor
 from widget.listView import ListView
 from widget.toast import Toast
 
@@ -35,7 +36,7 @@ from widget.toast import Toast
 class Ui_Form(object):
 	def setupUi(self, Form):
 		Form.setObjectName("Form")
-		Form.resize(868, 516)
+		# Form.resize(868, 516)
 
 		self.breadCrumbWidgetLayout = QtWidgets.QVBoxLayout(Form)
 		self.breadCrumbWidgetLayout.setContentsMargins(0, 0, 0, 0)
@@ -47,7 +48,7 @@ class Ui_Form(object):
 			self.breadCrumb.setStyleSheet(qss)
 		else:
 			log.warning('breadCrumb.qss is not loaded successfully')
-		self.mainWidget = QtWidgets.QWidget(Form)
+		self.mainWidget = QtWidgets.QFrame(Form)
 
 		self.breadCrumbWidgetLayout.addWidget(self.breadCrumb)
 		self.breadCrumbWidgetLayout.addWidget(self.mainWidget)
@@ -129,10 +130,21 @@ class Ui_Form(object):
 		self.mainWidgetLayout.addWidget(self.fileListWidget)
 
 		self.dataViewWidget = QtWidgets.QFrame(self.mainWidget)
+		self.dataViewWidget.setFixedWidth(350)
 		self.dataViewWidget.setObjectName('dataViewWidget')
 		self.dataViewWidgetLayout = QtWidgets.QVBoxLayout(self.dataViewWidget)
 		self.dataViewWidgetLayout.setContentsMargins(0, 0, 0, 0)
 		self.dataViewWidgetLayout.setSpacing(0)
+
+		self.tabWidget = TabWidget(self.mainWidget)
+		self.tabWidget.setMinimumWidth(600)
+		self.tabWidget.setTabsClosable(True)
+
+		qss = core.fbs.qss('tabWidget.qss')
+		if qss is not None:
+			self.tabWidget.setStyleSheet(qss)
+		else:
+			log.warning(f'Qss file is not loaded successfully. Filename is "tabWidget.qss"')
 
 		self.dataViewToolBar = QtWidgets.QFrame(self.dataViewWidget)
 		self.dataViewToolBar.setObjectName('dataViewToolBar')
@@ -156,7 +168,7 @@ class Ui_Form(object):
 		self.dataViewToolBarLayout.addWidget(self.addTextDataButton)
 		self.dataViewToolBarLayout.addWidget(self.addFileDataButton)
 		self.dataViewToolBarLayout.addItem(
-				QtWidgets.QSpacerItem(4, 0, QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Minimum))
+			QtWidgets.QSpacerItem(4, 0, QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Minimum))
 		self.dataViewToolBarLayout.addWidget(self.searchLineEditInData)
 
 		self.dataView = ListView(self.dataViewWidget)
@@ -173,6 +185,7 @@ class Ui_Form(object):
 			log.warning('Qss file is not loaded successfully. Filename is "dataView.qss"')
 
 		self.mainWidgetLayout.addWidget(self.dataViewWidget)
+		self.mainWidgetLayout.addWidget(self.tabWidget)
 
 		self.retranslateUi(Form)
 		QtCore.QMetaObject.connectSlotsByName(Form)
@@ -264,7 +277,8 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 
 		self.enterFolderShortcut.activated.connect(self.changeNextFolder)
 		self.fileListView.doubleClicked.connect(self.changeNextFolder)
-		self.dataView.doubleClicked.connect(self.openData)
+		self.dataView.clicked.connect(self.openData)
+		self.dataView.doubleClicked.connect(self.fixTabFromListView)
 		self.breadCrumb.clicked.connect(self.clickedBreadCrumb)
 		self.fileListView.customContextMenuRequested.connect(self.showRightClickPopupForListView)
 		self.dataView.customContextMenuRequested.connect(self.showRightClickPopupForDataView)
@@ -276,6 +290,9 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 		self.dataModel.rowsInserted.connect(self.saveDataModel)
 		self.dataModel.rowsRemoved.connect(self.saveDataModel)
 		self.dataModel.rowsMoved.connect(self.saveDataModel)
+
+		self.tabWidget.tabCloseRequested.connect(self.closeTab)
+		self.tabWidget.tabBarDoubleClicked.connect(self.fixTab)
 
 		self.addTextDataButton.clicked.connect(self.createNewTextFile)
 		self.addFileDataButton.clicked.connect(self.createNewFile)
@@ -291,19 +308,40 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 		self.fileListProxyModel.setRecursiveSearch(bool(value))
 
 
+	def closeTab(self, index):
+		self.tabWidget.removeTab(index)
+
+
+	def fixTab(self, index):
+		self.tabWidget.setFixedTab(index, True)
+
+
+	def fixTabFromListView(self, index):
+		data = index.data(QtCore.Qt.UserRole)
+		widgetIndex = self.tabWidget.getWidgetIndex(data)
+		self.fixTab(widgetIndex)
+
+
 	def openData(self, index):
 		data = index.data(QtCore.Qt.UserRole)
-		dialog = DataViewDialogFactory.create(data, self)
-		if dialog is not None:
-			qss = core.fbs.qss('dataShowDialog.qss')
-			if qss is not None:
-				dialog.setStyleSheet(qss)
-			else:
-				log.warning('dataShowDialog.qss is not loaded successfully')
-			dialog.open()
+		widgetIndex = self.tabWidget.getWidgetIndex(data)
+		if widgetIndex != -1:
+			self.tabWidget.setCurrentIndex(widgetIndex)
 		else:
-			log.warning(f'Unsupported data. Data {data} is not viewed.')
-			Toast.warning('Unsupported Data', 'Data is not upsupported')
+			widget = DataViewFactory.create(data, self)
+			if widget is not None:
+				qss = core.fbs.qss('dataShowDialog.qss')
+				if qss is not None:
+					widget.setStyleSheet(qss)
+				else:
+					log.warning('dataShowDialog.qss is not loaded successfully')
+				if not widget.isExternalWidget():
+					self.tabWidget.openWidget(widget)
+				else:
+					widget.open()
+			else:
+				log.warning(f'Unsupported data. Data {data} is not viewed.')
+				Toast.warning('Unsupported Data', 'Data is not upsupported')
 
 
 	def changeFocus(self):
@@ -395,7 +433,7 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 
 	def createNewTextFile(self):
 		if self.dataModel.hasFileItem() is True:
-			textEditorDialog = TextEditorDialog(self)
+			textEditorDialog = TextEditor(self)
 			textEditorDialog.fileSaved.connect(self.insertDataToDataModel)
 			textEditorDialog.open()
 		else:

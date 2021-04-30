@@ -64,7 +64,7 @@ def cmp(a, b):    return (a > b) - (a < b)
 
 def passedTime(time, suffix = None):
 	if suffix is None:
-		suffix = ['just', ' s', ' mins', ' hrs', ' days', ' m', ' y']
+		suffix = ['just', ' secs', ' mins', ' hrs', ' days', ' months', ' year']
 
 	timeInMili = time.timestamp() * 1000
 	nowInMili = datetime.datetime.now().timestamp() * 1000
