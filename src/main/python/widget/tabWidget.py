@@ -19,16 +19,17 @@ class TabWidget(QtWidgets.QTabWidget):
 			if self.isTabFixed(index) is False:
 				notFixedIndex = index
 
+		name = f'{data.parent().name()}/{data.name()}'
 		if notFixedIndex != -1:
+			currentIndex = notFixedIndex
 			self.removeTab(notFixedIndex)
-			self.insertTab(notFixedIndex, widget, f'{data.parent().name()}/{data.name()}')
-			self.setFixedTab(notFixedIndex, False)
-			self.setCurrentIndex(notFixedIndex)
 		else:
 			tabIndex = self.currentIndex() + 1
-			self.insertTab(tabIndex, widget, f'{data.parent().name()}/{data.name()}')
-			self.setFixedTab(tabIndex, False)
-			self.setCurrentIndex(tabIndex)
+			currentIndex = tabIndex
+		self.insertTab(currentIndex, widget, name)
+		self.setFixedTab(currentIndex, False)
+		self.setCurrentIndex(currentIndex)
+		self.setTabToolTip(currentIndex, f'{data.parent().path()}/{data.name()}')
 
 
 	def getWidgetIndex(self, data):
