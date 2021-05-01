@@ -10,6 +10,7 @@ class DataViewFactory(object):
 	def create(cls, data, parent):
 		if data.type() == DataType.STYLEDATA:
 			widget = TextEditor(parent)
+			widget.fileSaved.connect(parent.insertDataToDataModel)
 			widget.setCurrentData(data)
 			return widget
 		elif data.type() == DataType.IMAGEFILEDATA:

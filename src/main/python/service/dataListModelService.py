@@ -43,7 +43,7 @@ class __DataListModelFolderItemService__(object):
 						if jsonInString:
 							try:
 								dataListInDict = json.loads(jsonInString)
-								for dictData in dataListInDict:
+								for dictData in reversed(dataListInDict):
 									data = DataFactory.fileDataFromJson(dictData)
 									if data is not None:
 										data.setParent(listModelFileItem)

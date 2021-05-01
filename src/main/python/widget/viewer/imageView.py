@@ -48,3 +48,7 @@ class ImageView(QtWidgets.QWidget, BaseViewerInterface):
 			return self.currentData().id()
 		else:
 			return None
+
+
+	def accept(self):
+		return True

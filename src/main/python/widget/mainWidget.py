@@ -139,6 +139,7 @@ class Ui_Form(object):
 		self.tabWidget = TabWidget(self.mainWidget)
 		self.tabWidget.setMinimumWidth(600)
 		self.tabWidget.setTabsClosable(True)
+		self.tabWidget.setMovable(True)
 
 		qss = core.fbs.qss('tabWidget.qss')
 		if qss is not None:
@@ -210,12 +211,12 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 
 		self.fileListProxyModel.setSourceModel(self.fileTreeModel)
 		self.dataModel = DataModel(self.fileListProxyModel)
-
 		self.dataProxyModel = DataModelProxy()
 		self.dataProxyModel.setFilterCaseSensitivity(QtCore.Qt.CaseInsensitive)
 		self.dataProxyModel.setSourceModel(self.dataModel)
 
 		self.dataView.setModel(self.dataProxyModel)
+		self.tabWidget.setModel(self.dataProxyModel)
 
 		self.initializeShortcuts()
 		self.initSignalsAndSlots()
@@ -309,6 +310,9 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 
 
 	def closeTab(self, index):
+		currentWidget = self.tabWidget.widget(index)
+		if currentWidget.accept() is False:
+			return
 		self.tabWidget.removeTab(index)
 
 
@@ -433,9 +437,9 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 
 	def createNewTextFile(self):
 		if self.dataModel.hasFileItem() is True:
-			textEditorDialog = TextEditor(self)
-			textEditorDialog.fileSaved.connect(self.insertDataToDataModel)
-			textEditorDialog.open()
+			textEditor = TextEditor(self)
+			textEditor.fileSaved.connect(self.insertDataToDataModel)
+			self.tabWidget.openWidget(textEditor)
 		else:
 			Toast.warning('New Data Warning', 'There is no selected item')
 			log.warning('Current data model is empty. Therefore new text file does not created')
@@ -479,11 +483,15 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 		listFileItem = self.dataModel.listModelFileItem()
 		childNumber = listFileItem.childNumber()
 		if childNumber is not None:
+
 			index = self.fileListProxyModel.index(childNumber)
 			_, _ = self.fileListProxyModel.beginEditData(index)
-			self.dataModel.insertData(dataModelItem)
+			if dataModelItem.parent() is None:
+				dataModelItem.setParent(listFileItem)
+				self.dataModel.insertData(dataModelItem)
 			self.dataListModelService().save(self.dataModel.listModelFileItem())
 			self.fileListProxyModel.endEditData(index)
+
 		else:
 			log.warning(f'Child number is none of file item {listFileItem} while insert new data to data model at '
 						f'insertDataToDataModel() method')

@@ -1,6 +1,7 @@
 import datetime
 import os
 
+import static
 from enums import FileType
 
 listModelID = 0

@@ -88,7 +88,7 @@ class DataModel(QtCore.QAbstractListModel):
 
 
 	def insertData(self, data):
-		self.beginInsertRows(QtCore.QModelIndex(), self.rowCount(), self.rowCount())
+		self.beginInsertRows(QtCore.QModelIndex(), 0, 0)
 		self.listModelFileItem().appendData(data)
 		self.listModelFileItem().updateLastUpdateDate()
 		self.endInsertRows()

@@ -23,9 +23,8 @@ class TextEditor(QtWidgets.QWidget, BaseViewerInterface, ConfigurationService):
 		self.dialogLayout.setContentsMargins(0, 0, 0, 0)
 		self.textEditorWidget = TextEditorWidget(self)
 		self.dialogLayout.addWidget(self.textEditorWidget)
-		self.setWindowTitle('New Text File')
-		self.resize(1000, 600)
 		self.__currentTextData = None
+		self.__filename = None
 
 		self.autoSaveTimer = QtCore.QTimer(self)
 		self.autoSaveTimer.setSingleShot(True)
@@ -75,15 +74,20 @@ class TextEditor(QtWidgets.QWidget, BaseViewerInterface, ConfigurationService):
 
 	def save(self):
 		if self.isModified() is True:
-			if self.currentData() is None:
+			if self.__filename is None:
 				filename, result = QtWidgets.QInputDialog.getText(self, 'Save File', 'Enter a filename to save',
 																  text = 'Text')
 				filenameArray = filename.split(' ')
 				now = datetime.datetime.now().timestamp()
 				path = os.path.join(core.fbs.filesPath, f'{"_".join(filenameArray)}_{int(now)}.json')
 			else:
-				filename = self.currentData().filename
-				path = self.currentData().path
+				filename = self.__filename
+				if self.currentData() is not None:
+					path = self.currentData().path
+				else:
+					filenameArray = filename.split(' ')
+					now = datetime.datetime.now().timestamp()
+					path = os.path.join(core.fbs.filesPath, f'{"_".join(filenameArray)}_{int(now)}.json')
 				result = True
 
 			if filename and result is True:
@@ -92,6 +96,8 @@ class TextEditor(QtWidgets.QWidget, BaseViewerInterface, ConfigurationService):
 
 
 	def setCurrentData(self, data):
+		if data is not None:
+			self.__filename = data.name()
 		self.__currentTextData = data
 		self.__setCurrentData()
 
@@ -125,6 +131,7 @@ class TextEditor(QtWidgets.QWidget, BaseViewerInterface, ConfigurationService):
 			newFile = FileData(filename, path)
 			newFile.setType(DataType.STYLEDATA)
 			self.__currentTextData = newFile
+			self.__filename = filename
 		self.fileSaved.emit(self.currentData())
 
 		return True
@@ -152,7 +159,7 @@ class TextEditor(QtWidgets.QWidget, BaseViewerInterface, ConfigurationService):
 					f'Exception is {e}')
 
 
-	def reject(self):
+	def accept(self):
 		if self.isModified() is True:
 			# do not show warning message if current data is valid
 			if self.currentData() is None:
@@ -168,11 +175,12 @@ class TextEditor(QtWidgets.QWidget, BaseViewerInterface, ConfigurationService):
 				# save the session before quit
 				if self.save() is False:
 					# if not saved, not closed
-					return
+					return False
 
 			elif ret == QtWidgets.QMessageBox.Cancel:
-				return
-		super(TextEditor, self).reject()
+				return False
+
+		return True
 
 
 	def isModified(self):
