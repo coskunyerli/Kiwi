@@ -12,11 +12,17 @@ class SubProcessDialog(BaseViewerInterface):
 		self.process = subprocess.Popen(self.executable)
 
 
+	def fileSavedSignal(self):
+		return None
+
+
 	def setStyleSheet(self, styleSheet):
 		pass
 
+
 	def isExternalWidget(self):
 		return True
+
 
 	def id(self):
 		return '&'.join(self.executable)

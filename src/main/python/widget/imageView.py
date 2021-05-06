@@ -16,6 +16,10 @@ class BaseImageViewer(QtWidgets.QGraphicsView):
 		self.pixmapItem.setPixmap(pixmap)
 
 
+	def getPixmap(self):
+		return self.pixmapItem.pixmap()
+
+
 class ImageViewer(BaseImageViewer):
 	def __init__(self, parent = None):
 		super(ImageViewer, self).__init__(parent)

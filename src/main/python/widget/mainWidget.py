@@ -317,7 +317,9 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 
 
 	def fixTab(self, index):
-		self.tabWidget.setFixedTab(index, True)
+		widget = self.tabWidget.widget(index)
+		if widget is not None:
+			self.tabWidget.setFixedTab(index, True)
 
 
 	def fixTabFromListView(self, index):
@@ -339,6 +341,8 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 					widget.setStyleSheet(qss)
 				else:
 					log.warning('dataShowDialog.qss is not loaded successfully')
+				if widget.fileSavedSignal() is not None:
+					widget.fileSavedSignal().connect(self.insertDataToDataModel)
 				if not widget.isExternalWidget():
 					self.tabWidget.openWidget(widget)
 				else:
@@ -438,7 +442,7 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 	def createNewTextFile(self):
 		if self.dataModel.hasFileItem() is True:
 			textEditor = TextEditor(self)
-			textEditor.fileSaved.connect(self.insertDataToDataModel)
+			textEditor.fileSavedSignal().connect(self.insertDataToDataModel)
 			self.tabWidget.openWidget(textEditor)
 		else:
 			Toast.warning('New Data Warning', 'There is no selected item')
@@ -480,7 +484,10 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 
 	def insertDataToDataModel(self, dataModelItem):
 		# insert new file data to the data model
-		listFileItem = self.dataModel.listModelFileItem()
+		if dataModelItem.parent() is not None:
+			listFileItem = dataModelItem.parent()
+		else:
+			listFileItem = self.dataModel.listModelFileItem()
 		childNumber = listFileItem.childNumber()
 		if childNumber is not None:
 
@@ -489,7 +496,7 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 			if dataModelItem.parent() is None:
 				dataModelItem.setParent(listFileItem)
 				self.dataModel.insertData(dataModelItem)
-			self.dataListModelService().save(self.dataModel.listModelFileItem())
+			self.dataListModelService().save(listFileItem)
 			self.fileListProxyModel.endEditData(index)
 
 		else:

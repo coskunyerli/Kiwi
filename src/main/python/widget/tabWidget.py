@@ -94,6 +94,8 @@ class TabWidget(QtWidgets.QTabWidget):
 		data = left.data(QtCore.Qt.UserRole)
 		widgetIndex = self.getWidgetIndex(data)
 		if widgetIndex != -1:
+			widget = self.widget(widgetIndex)
+			widget.setModified(True)
 			name = f'{data.parent().name()}/{data.name()}'
 			toolTipText = f'{data.parent().path()}/{data.name()}'
 			self.setTabToolTip(widgetIndex, toolTipText)
@@ -106,6 +108,8 @@ class TabWidget(QtWidgets.QTabWidget):
 		data = self.model().index(first, 0, parent).data(QtCore.Qt.UserRole)
 		widgetIndex = self.getWidgetIndex(data)
 		if widgetIndex != -1:
+			widget = self.widget(widgetIndex)
+			widget.setModified(True)
 			name = f'{data.parent().name()}/{data.name()} (Deleted)'
 			toolTipText = f'{data.parent().path()}/{data.name()} (Deleted)'
 			self.setTabToolTip(widgetIndex, toolTipText)

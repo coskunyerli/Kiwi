@@ -44,6 +44,10 @@ class TextEditor(QtWidgets.QWidget, BaseViewerInterface, ConfigurationService):
 		return False
 
 
+	def fileSavedSignal(self):
+		return self.fileSaved
+
+
 	def setupEditor(self):
 		font = QtGui.QFont()
 		font.setFamily('Menlo')
@@ -132,7 +136,7 @@ class TextEditor(QtWidgets.QWidget, BaseViewerInterface, ConfigurationService):
 			newFile.setType(DataType.STYLEDATA)
 			self.__currentTextData = newFile
 			self.__filename = filename
-		self.fileSaved.emit(self.currentData())
+		self.fileSavedSignal().emit(self.currentData())
 
 		return True
 

@@ -16,3 +16,7 @@ class BaseViewerInterface(object):
 
 	def isExternalWidget(self):
 		pass
+
+
+	def fileSavedSignal(self):
+		pass
