@@ -133,7 +133,7 @@ class ListTreeModel(QtCore.QAbstractItemModel):
 		item = static.first_(parentFolder.childItems, lambda child: child.id() == listModelFileItem.id())
 		if item is not None:
 			raise InvalidListModelItemException(
-					f'Data "({listModelFileItem.id()}, {listModelFileItem.name}) " can not insert to model. Because it already exists in the model')
+				f'Data "({listModelFileItem.id()}, {listModelFileItem.name}) " can not insert to model. Because it already exists in the model')
 		self.beginInsertRows(parent, index, index)
 		checkedIndex = self.__toValidIndex(index, index, parent)
 		parentFolder.insert(listModelFileItem, checkedIndex)
@@ -189,10 +189,14 @@ class ListTreeModel(QtCore.QAbstractItemModel):
 			# move data
 			index = dropFileList.childNumber()
 			self.beginMoveRows(dropIndex.parent(), index, index, parent, row)
-			beforeParentObject.remove(dropFileList)
-			dropParent.insert(dropFileList, row)
+			if dropIndex.parent() == parent:
+				beforeParentObject.move(index, row)
+			else:
+				beforeParentObject.remove(dropFileList)
+				dropParent.insert(dropFileList, row)
 			dropFileList.setParent(dropParent)
 			self.endMoveRows()
+			# self.layoutChanged.emit()
 			return True
 		else:
 			return False

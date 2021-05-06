@@ -230,6 +230,13 @@ class ListModelFolderItem(ListModelFileItem):
 		return self.childItems[row]
 
 
+	def move(self, from_, to):
+		item = self.childItems[from_]
+		self.childItems[from_] = None
+		self.childItems.insert(to, item)
+		self.childItems.remove(None)
+
+
 	def dict(self):
 		return {'id': self.id(), 'parentID': self.parent().id() if self.parent() is not None else None,
 				'name': self.name(), 'type': self.type,

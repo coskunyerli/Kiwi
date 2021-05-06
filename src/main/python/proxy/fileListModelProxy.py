@@ -59,7 +59,6 @@ class FileListModelProxy(QtCore.QAbstractProxyModel):
 		else:
 			return True
 
-
 	def beginEditData(self, index):
 		sourceIndex = self.mapToSource(index)
 		return self.sourceModel().beginEditData(sourceIndex)
