@@ -12,12 +12,12 @@ class DataFactory(object):
 		# create file data from file picker data widget.
 		_, extension = os.path.splitext(data.filename)
 		if extension in ['.jpg', '.png', '.jpeg']:
-			fileData = ImageFileData(data.name, data.filename)
+			fileData = ImageFileData(data.name(), data.filename)
 		elif extension == '.pdf':
-			fileData = FileData(data.name, data.filename)
+			fileData = FileData(data.name(), data.filename)
 			fileData.setType(DataType.PDFFILEDATA)
 		elif extension == '.txt':
-			fileData = FileData(data.name, data.filename)
+			fileData = FileData(data.name(), data.filename)
 			fileData.setType(DataType.TEXTFILEDATA)
 		else:
 			fileData = None

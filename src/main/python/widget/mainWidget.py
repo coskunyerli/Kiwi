@@ -619,7 +619,7 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 			data = index.data(QtCore.Qt.UserRole)
 			listModelFileItem = self.dataModel.listModelFileItem()
 			fileListIndex = self.fileListProxyModel.index(listModelFileItem.childNumber())
-			newText, result = QtWidgets.QInputDialog.getText(self, 'Rename File', 'New Data Name', text = data.name)
+			newText, result = QtWidgets.QInputDialog.getText(self, 'Rename File', 'New Data Name', text = data.name())
 			if result and fileListIndex.isValid():
 				self.fileListProxyModel.beginEditData(fileListIndex)
 				self.dataModel.beginEditData(index)

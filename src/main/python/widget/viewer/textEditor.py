@@ -77,26 +77,26 @@ class TextEditor(QtWidgets.QWidget, BaseViewerInterface, ConfigurationService):
 
 
 	def save(self):
-		if self.isModified() is True:
-			if self.__filename is None:
-				filename, result = QtWidgets.QInputDialog.getText(self, 'Save File', 'Enter a filename to save',
-																  text = 'Text')
+		if self.__filename is None:
+			filename, result = QtWidgets.QInputDialog.getText(self, 'Save File', 'Enter a filename to save',
+															  text = 'Text')
+			filenameArray = filename.split(' ')
+			now = datetime.datetime.now().timestamp()
+			path = os.path.join(core.fbs.filesPath, f'{"_".join(filenameArray)}_{int(now)}.json')
+		else:
+			filename = self.__filename
+			if self.currentData() is not None:
+				path = self.currentData().path
+			else:
 				filenameArray = filename.split(' ')
 				now = datetime.datetime.now().timestamp()
 				path = os.path.join(core.fbs.filesPath, f'{"_".join(filenameArray)}_{int(now)}.json')
-			else:
-				filename = self.__filename
-				if self.currentData() is not None:
-					path = self.currentData().path
-				else:
-					filenameArray = filename.split(' ')
-					now = datetime.datetime.now().timestamp()
-					path = os.path.join(core.fbs.filesPath, f'{"_".join(filenameArray)}_{int(now)}.json')
-				result = True
+			result = True
 
-			if filename and result is True:
-				return self.__save(filename, path)
-		return False
+		if filename and result is True:
+			return self.__save(filename, path)
+		else:
+			return False
 
 
 	def setCurrentData(self, data):
