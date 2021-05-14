@@ -373,7 +373,7 @@ class MainWidget(Ui_Form, QtWidgets.QWidget, SaveListModelFolderItemService, Dat
 		data, old = self.fileListProxyModel.beginEditData(index)
 		data.setFixed(not data.isFixed)
 		if data.isFixed:
-			self.fileTreeModel.moveRow(index.parent(), index.row(), index.parent(), 0)
+			self.fileListProxyModel.moveRow(index.parent(), index.row(), index.parent(), 0)
 
 		self.fileListProxyModel.endEditData(index)
 		self.fileListView.update()

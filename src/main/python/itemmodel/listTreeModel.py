@@ -20,15 +20,18 @@ class ListTreeModel(QtCore.QAbstractItemModel):
 
 
 	def moveRow(self, sourceParent, sourceRow, destinationParent, destinationChild):
-		if sourceParent == destinationParent and sourceRow == destinationChild:
+		destinationChild = self.__toValidIndex(destinationChild, destinationChild, destinationParent)
+		if sourceParent == destinationParent and (sourceRow == destinationChild or sourceRow + 1 == destinationChild):
 			return False
-		destinationChild = self.__toValidIndex(destinationChild, destinationChild)
 		self.beginMoveRows(sourceParent, sourceRow, sourceRow + 1, destinationParent, destinationChild)
 		sourceFolder = self.getFileItem(sourceParent)
-		destinationParentItem = self.getFileItem(destinationParent)
-		item = sourceFolder.pop(sourceRow)
-		item.updateLastUpdateDate()
-		destinationParentItem.insert(item, destinationChild)
+		if sourceParent == destinationParent:
+			sourceFolder.move(sourceRow, destinationChild)
+		else:
+			item = sourceFolder.pop(sourceRow)
+			destinationParent.insert(item, destinationChild)
+			item.updateLastUpdateDate()
+			item.setParent(destinationParent)
 		self.endMoveRows()
 		return True
 
@@ -194,6 +197,7 @@ class ListTreeModel(QtCore.QAbstractItemModel):
 			else:
 				beforeParentObject.remove(dropFileList)
 				dropParent.insert(dropFileList, row)
+				dropFileList.updateLastUpdateDate()
 			dropFileList.setParent(dropParent)
 			self.endMoveRows()
 			# self.layoutChanged.emit()
@@ -257,6 +261,8 @@ class ListTreeModel(QtCore.QAbstractItemModel):
 		isNotValid = True
 		item = parentItem.child(to)
 		while item and isNotValid:
+			if to == parentItem.childCount() - 1:
+				return to
 			item = parentItem.child(to)
 			if item.isFixed:
 				to += 1

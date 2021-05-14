@@ -39,6 +39,12 @@ class FileListModelProxy(QtCore.QAbstractProxyModel):
 		return self.__searchText
 
 
+	def moveRow(self, sourceProxyParent, sourceRow, destinationProxyParent, destinationChild):
+		sourceParent = self.mapToSource(sourceProxyParent)
+		destinationParent = self.mapToSource(destinationProxyParent)
+		return self.sourceModel().moveRow(sourceParent, sourceRow, destinationParent, destinationChild)
+
+
 	def hasRecursiveSearch(self):
 		# check that has recursive search or not
 		return self.__recursiveSearch
@@ -58,6 +64,7 @@ class FileListModelProxy(QtCore.QAbstractProxyModel):
 			return self.currentFolder().isEmpty()
 		else:
 			return True
+
 
 	def beginEditData(self, index):
 		sourceIndex = self.mapToSource(index)
@@ -101,6 +108,7 @@ class FileListModelProxy(QtCore.QAbstractProxyModel):
 			sourceParent = self.mapToSource(parent)
 		return self.sourceModel().dropMimeData(mimeData, action, row, column, sourceParent)
 
+
 	def sourceFolder(self):
 		return self.currentFolder().sourceFolder()
 
@@ -117,11 +125,18 @@ class FileListModelProxy(QtCore.QAbstractProxyModel):
 
 
 	def mapToSource(self, proxyIndex):
-		return self.proxyToSource.get(proxyIndex, QtCore.QModelIndex())
+		if proxyIndex.isValid() is False:
+			return self.sourceModel().getItemIndex(self.sourceFolder())
+		else:
+			return self.proxyToSource.get(proxyIndex, QtCore.QModelIndex())
 
 
 	def mapFromSource(self, sourceIndex):
-		return self.sourceToProxy.get(sourceIndex, QtCore.QModelIndex())
+		item = sourceIndex.data(QtCore.Qt.UserRole)
+		if self.sourceFolder() == item:
+			return QtCore.QModelIndex()
+		else:
+			return self.sourceToProxy.get(sourceIndex, QtCore.QModelIndex())
 
 
 	def parent(self, index = QtCore.QModelIndex()):
@@ -162,6 +177,7 @@ class FileListModelProxy(QtCore.QAbstractProxyModel):
 	def __dataChanged(self, topLeft, bottomRight, role):
 		self.__updateIndices()
 		self.dataChanged.emit(topLeft, bottomRight, role)
+
 
 	def index(self, row, column = 0, parent = QtCore.QModelIndex()):
 		if parent.isValid() is False:

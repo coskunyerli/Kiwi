@@ -1,7 +1,6 @@
 import datetime
 import os
 
-import static
 from enums import FileType
 
 listModelID = 0
@@ -234,6 +233,7 @@ class ListModelFolderItem(ListModelFileItem):
 		item = self.childItems[from_]
 		self.childItems[from_] = None
 		self.childItems.insert(to, item)
+		item.updateLastUpdateDate()
 		self.childItems.remove(None)
 
 
