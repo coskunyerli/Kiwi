@@ -111,7 +111,7 @@ class TextEditor(QtWidgets.QWidget, BaseViewerInterface, ConfigurationService):
 
 
 	def autoSave(self):
-		if self.currentData() is not None:
+		if self.currentData() is not None and self.isModified():
 			self.__save(self.currentData().filename, self.currentData().path)
 
 
